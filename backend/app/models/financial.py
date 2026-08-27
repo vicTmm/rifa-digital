@@ -37,13 +37,13 @@ class WithdrawalRequest(Base):
     __tablename__ = "withdrawal_requests"
 
     id = Column(Integer, primary_key=True, index=True)
-    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     
     amount = Column(Float, nullable=False)
     pix_key = Column(String, nullable=False)
     pix_key_type = Column(String, nullable=False)
     
-    status = Column(String, default=WithdrawalStatus.PENDING.value, nullable=False)
+    status = Column(String, default=WithdrawalStatus.PENDING.value, nullable=False, index=True)
     admin_notes = Column(Text, nullable=True)
     proof_url = Column(String, nullable=True)
     

@@ -7,7 +7,7 @@ Uma plataforma moderna, completa e escalável para criação, venda e gestão de
 ## 🚀 Tecnologias Utilizadas
 
 ### ⚡ Backend
-- **Python 3.14+** com **FastAPI** (Performance assíncrona ultra rápida)
+- **Python 3.13** com **FastAPI** (versão de referência usada pelo CI)
 - **SQLAlchemy 2.0** + **SQLite** (Desenvolvimento local) / **PostgreSQL** pronto para produção
 - **Pydantic v2** & **Pydantic Settings** (Validação estrita de dados)
 - **PyJWT & Bcrypt** (Autenticação segura e RBAC: SuperAdmin, Organizador e Comprador)
@@ -59,8 +59,9 @@ Uma plataforma moderna, completa e escalável para criação, venda e gestão de
 ## 🛠️ Como Executar o Projeto
 
 ### Pré-requisitos
-- **Python 3.10+** (com `py` ou `python` no PATH)
-- **Node.js 18+** e **npm**
+- **Python 3.13** (versão usada pelo CI; arquivo `.python-version`)
+- **Node.js 22** e **npm 10 ou 11** (arquivo `.nvmrc`)
+- **PostgreSQL 17** para validar o comportamento de produção; SQLite continua disponível para desenvolvimento rápido
 
 ---
 
@@ -83,12 +84,13 @@ Ou abra duas janelas do terminal e execute:
 # Entrar no diretório raiz do projeto
 cd C:\Projetos\rifa-digital
 
-# Ativar o ambiente virtual
-backend\venv\Scripts\activate
+# Criar o ambiente virtual e instalar dependências
+py -3.13 -m venv backend\venv
+backend\venv\Scripts\python.exe -m pip install -r backend\requirements-dev.txt
 
 # Iniciar o servidor FastAPI
-python -m alembic upgrade head
-python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+backend\venv\Scripts\python.exe -m alembic upgrade head
+backend\venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 - A API estará disponível em: **`http://localhost:8000`**
 - Documentação interativa (Swagger UI): **`http://localhost:8000/docs`**
@@ -96,6 +98,7 @@ python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
 #### 2. Iniciar o Frontend (Next.js):
 ```bash
 cd C:\Projetos\rifa-digital\frontend
+npm ci
 npm run dev
 ```
 - O Frontend estará disponível em: **`http://localhost:3000`**
@@ -157,12 +160,16 @@ rifa-digital/
 
 ```powershell
 # Backend
+backend\venv\Scripts\python.exe -m pip install -r backend\requirements-dev.txt
 backend\venv\Scripts\python.exe -m alembic upgrade head
+backend\venv\Scripts\python.exe -m alembic check
 backend\venv\Scripts\python.exe -m pytest backend/tests -q
 
 # Frontend
 cd frontend
+npm.cmd ci
+npm.cmd audit --audit-level=high
 npm.cmd run build
 ```
 
-O workflow de CI executa essas verificações automaticamente em pushes para `main` e em pull requests.
+O workflow de CI executa essas verificações automaticamente em pushes para `main` e em pull requests. O job do backend usa PostgreSQL 17 e também confirma que não existe divergência entre as migrações e os modelos SQLAlchemy.

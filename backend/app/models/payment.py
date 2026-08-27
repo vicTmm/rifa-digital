@@ -1,12 +1,15 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer, JSON, String, Text
+from sqlalchemy import Column, DateTime, Integer, JSON, String, Text, UniqueConstraint
 
 from backend.app.database import Base
 
 
 class PaymentEvent(Base):
     __tablename__ = "payment_events"
+    __table_args__ = (
+        UniqueConstraint("event_key", name="uq_payment_events_event_key"),
+    )
 
     id = Column(Integer, primary_key=True)
     event_key = Column(String, nullable=False, unique=True, index=True)

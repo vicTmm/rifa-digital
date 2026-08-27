@@ -1,12 +1,15 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 
 from backend.app.database import Base
 
 
 class DrawAudit(Base):
     __tablename__ = "draw_audits"
+    __table_args__ = (
+        UniqueConstraint("raffle_id", name="uq_draw_audits_raffle_id"),
+    )
 
     id = Column(Integer, primary_key=True)
     raffle_id = Column(Integer, ForeignKey("raffles.id"), nullable=False, unique=True, index=True)
