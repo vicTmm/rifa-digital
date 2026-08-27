@@ -137,9 +137,11 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
   - [x] Exigir token de acesso específico do pedido em todos os ambientes.
   - [x] Proteger também a simulação de pagamento disponível em desenvolvimento.
 
-- [ ] **F2.3 — Implementar rate limiting.**
-  - Aplicar limites a login, cadastro, pedidos, simulação e consultas públicas.
-  - Definir resposta padronizada para excesso de requisições.
+- [x] **F2.3 — Implementar rate limiting.**
+  - [x] Aplicar limites configuráveis a login, cadastro, criação de pedido, simulação e consultas públicas.
+  - [x] Definir resposta `429` padronizada com orientação de nova tentativa.
+  - [x] Exigir armazenamento compartilhado em produção e permitir memória apenas no desenvolvimento.
+  - [x] Adicionar teste automatizado do bloqueio de tentativas de login.
 
 - [ ] **F2.4 — Isolar recursos exclusivos de desenvolvimento.**
   - Impedir que o simulador de pagamento seja habilitado em produção.

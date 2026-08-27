@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from backend.app.database import get_db
@@ -12,6 +12,8 @@ from backend.app.services.auth import (
     get_current_user
 )
 import re
+from backend.app.config import settings
+from backend.app.services.rate_limit import limiter
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
@@ -23,7 +25,8 @@ def generate_slug(text: str) -> str:
     return slug
 
 @router.post("/register", response_model=Token)
-def register_user(payload: UserRegister, db: Session = Depends(get_db)):
+@limiter.limit(settings.AUTH_REGISTER_RATE_LIMIT)
+def register_user(request: Request, payload: UserRegister, db: Session = Depends(get_db)):
     # Check if email exists
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
@@ -72,7 +75,8 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
     }
 
 @router.post("/login", response_model=Token)
-def login(payload: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit(settings.AUTH_LOGIN_RATE_LIMIT)
+def login(request: Request, payload: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(

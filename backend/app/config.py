@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     EXPIRED_ORDER_CLEANUP_INTERVAL_SECONDS: int = 60
     PAYMENT_RECONCILIATION_INTERVAL_SECONDS: int = 300
     REQUIRE_ORDER_ACCESS_TOKEN: bool = False
+
+    # Rate limiting. Use Redis in multi-process/staging/production deployments.
+    RATE_LIMIT_STORAGE_URI: str = "memory://"
+    AUTH_LOGIN_RATE_LIMIT: str = "5/minute"
+    AUTH_REGISTER_RATE_LIMIT: str = "3/hour"
+    ORDER_CREATE_RATE_LIMIT: str = "20/minute"
+    ORDER_LOOKUP_RATE_LIMIT: str = "30/minute"
+    PAYMENT_SIMULATOR_RATE_LIMIT: str = "10/minute"
     
     # Mercado Pago
     MERCADO_PAGO_ACCESS_TOKEN: str = "TEST-MERCADOPAGO-ACCESS-TOKEN-MOCK"
@@ -58,6 +66,8 @@ class Settings(BaseSettings):
                 raise ValueError("MERCADO_PAGO_WEBHOOK_SECRET deve ser configurado em produção")
             if self.CREDENTIAL_ENCRYPTION_KEY == "development-only-credential-key":
                 raise ValueError("CREDENTIAL_ENCRYPTION_KEY deve ser configurada em produção")
+            if self.RATE_LIMIT_STORAGE_URI == "memory://":
+                raise ValueError("RATE_LIMIT_STORAGE_URI deve usar armazenamento compartilhado em produção")
             self.ENABLE_PAYMENT_SIMULATOR = False
             self.REQUIRE_ORDER_ACCESS_TOKEN = True
         return self

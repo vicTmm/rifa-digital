@@ -1,10 +1,12 @@
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import asyncio
 import os
 from sqlalchemy import text
+from slowapi.errors import RateLimitExceeded
 
 from backend.app.config import settings
 from backend.app.seed import seed_database
@@ -12,6 +14,7 @@ from backend.app.database import SessionLocal
 from backend.app.services.raffle_service import RaffleService
 from backend.app.services.payment_reconciliation import PaymentReconciliationService
 from backend.app.routers import auth, tenants, raffles, orders, tickets, admin, uploads
+from backend.app.services.rate_limit import limiter
 
 def cleanup_expired_orders() -> None:
     db = SessionLocal()
@@ -67,6 +70,16 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(_, __):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Muitas solicitações. Aguarde antes de tentar novamente."},
+        headers={"Retry-After": "60"},
+    )
 
 # CORS Middleware
 app.add_middleware(

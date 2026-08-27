@@ -18,6 +18,7 @@ from backend.app.services.whatsapp_service import WhatsAppService
 from backend.app.config import settings
 from backend.app.services.credentials import CredentialService
 from backend.app.services.payment_events import PaymentEventService
+from backend.app.services.rate_limit import limiter
 
 router = APIRouter(prefix="/orders", tags=["Pedidos e Checkout PIX"])
 
@@ -31,7 +32,8 @@ def validate_order_access(order: Order, token: Optional[str]) -> None:
         raise HTTPException(status_code=404, detail="Pedido não encontrado.")
 
 @router.post("", response_model=OrderResponse)
-async def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
+@limiter.limit(settings.ORDER_CREATE_RATE_LIMIT)
+async def create_order(request: Request, payload: OrderCreate, db: Session = Depends(get_db)):
     RaffleService.cleanup_expired_orders(db, payload.raffle_id)
     
     raffle = db.query(Raffle).filter(Raffle.id == payload.raffle_id).first()
@@ -154,7 +156,9 @@ async def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
     }
 
 @router.get("/{order_id}", response_model=OrderStatusResponse)
+@limiter.limit(settings.ORDER_LOOKUP_RATE_LIMIT)
 def get_order_status(
+    request: Request,
     order_id: int,
     order_token: Optional[str] = Header(None, alias="X-Order-Token"),
     db: Session = Depends(get_db),
@@ -183,7 +187,9 @@ def get_order_status(
     }
 
 @router.post("/{order_id}/simulate-payment", response_model=OrderStatusResponse)
+@limiter.limit(settings.PAYMENT_SIMULATOR_RATE_LIMIT)
 async def simulate_order_payment(
+    request: Request,
     order_id: int,
     background_tasks: BackgroundTasks,
     order_token: Optional[str] = Header(None, alias="X-Order-Token"),

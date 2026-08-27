@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from backend.app.database import get_db
@@ -8,6 +8,8 @@ from backend.app.models.ticket import Ticket, TicketStatus
 from backend.app.schemas.ticket import CustomerRaffleTickets, TicketPublic
 from backend.app.services.raffle_service import RaffleService
 from backend.app.routers.orders import validate_order_access
+from backend.app.config import settings
+from backend.app.services.rate_limit import limiter
 
 router = APIRouter(prefix="/tickets", tags=["Bilhetes e Consulta"])
 
@@ -40,7 +42,9 @@ def get_raffle_number_grid(raffle_id: int, db: Session = Depends(get_db)):
     }
 
 @router.get("/my-tickets", response_model=List[CustomerRaffleTickets])
+@limiter.limit(settings.ORDER_LOOKUP_RATE_LIMIT)
 def search_my_tickets(
+    request: Request,
     order_id: int = Query(..., gt=0, description="Identificador do pedido"),
     order_token: Optional[str] = Header(None, alias="X-Order-Token"),
     db: Session = Depends(get_db),
