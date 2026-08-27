@@ -43,6 +43,7 @@ class Order(Base):
     pix_code = Column(Text, nullable=True) # Copia e Cola Payload
     pix_txid = Column(String, nullable=True, index=True)
     mp_payment_id = Column(String, nullable=True, index=True) # Mercado Pago payment ID
+    access_token_hash = Column(String, nullable=True, index=True)
     
     expires_at = Column(DateTime, nullable=False)
     paid_at = Column(DateTime, nullable=True)

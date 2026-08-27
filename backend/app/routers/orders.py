@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Header, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.exc import IntegrityError
+import hashlib
+import hmac
+import secrets
 from backend.app.database import get_db
 from backend.app.models.raffle import Raffle, RaffleStatus
 from backend.app.models.order import Order, OrderStatus
@@ -11,10 +14,22 @@ from backend.app.models.tenant import Tenant
 from backend.app.schemas.order import OrderCreate, OrderResponse, OrderStatusResponse, SimulatePaymentRequest
 from backend.app.services.raffle_service import RaffleService
 from backend.app.services.mercadopago_service import MercadoPagoService
+from backend.app.services.whatsapp_service import WhatsAppService
 from backend.app.config import settings
 from backend.app.services.credentials import CredentialService
 
 router = APIRouter(prefix="/orders", tags=["Pedidos e Checkout PIX"])
+
+def hash_order_access_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+def validate_order_access(order: Order, token: Optional[str]) -> None:
+    if not settings.REQUIRE_ORDER_ACCESS_TOKEN:
+        return
+    if not token or not order.access_token_hash:
+        raise HTTPException(status_code=404, detail="Pedido não encontrado.")
+    if not hmac.compare_digest(order.access_token_hash, hash_order_access_token(token)):
+        raise HTTPException(status_code=404, detail="Pedido não encontrado.")
 
 @router.post("", response_model=OrderResponse)
 async def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
@@ -67,7 +82,8 @@ async def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
         expires_minutes=settings.ORDER_RESERVATION_MINUTES
     )
     
-    # Create Order record
+    # Create Order record. Only the hash is persisted; the raw token is returned once.
+    raw_access_token = secrets.token_urlsafe(32)
     new_order = Order(
         raffle_id=raffle.id,
         customer_name=payload.customer_name,
@@ -83,6 +99,7 @@ async def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
         pix_code=payment_data.get("pix_code"),
         pix_txid=payment_data.get("txid"),
         mp_payment_id=payment_data.get("payment_id"),
+        access_token_hash=hash_order_access_token(raw_access_token),
         expires_at=expires_at
     )
     db.add(new_order)
@@ -133,17 +150,23 @@ async def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
         "expires_at": new_order.expires_at,
         "created_at": new_order.created_at,
         "tickets": formatted_numbers,
-        "lucky_numbers_won": []
+        "lucky_numbers_won": [],
+        "access_token": raw_access_token,
     }
 
 @router.get("/{order_id}", response_model=OrderStatusResponse)
-def get_order_status(order_id: int, db: Session = Depends(get_db)):
+def get_order_status(
+    order_id: int,
+    order_token: Optional[str] = Header(None, alias="X-Order-Token"),
+    db: Session = Depends(get_db),
+):
     RaffleService.cleanup_expired_orders(db)
     
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Pedido não encontrado.")
         
+    validate_order_access(order, order_token)
     tickets = db.query(Ticket).filter(Ticket.order_id == order.id).all()
     ticket_numbers = [t.number_str for t in tickets]
     

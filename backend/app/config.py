@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     DEFAULT_PLATFORM_FEE_PERCENT: float = 5.0 # 5% default fee
     ORDER_RESERVATION_MINUTES: int = 15 # 15 min to pay PIX
     EXPIRED_ORDER_CLEANUP_INTERVAL_SECONDS: int = 60
+    REQUIRE_ORDER_ACCESS_TOKEN: bool = False
     
     # Mercado Pago
     MERCADO_PAGO_ACCESS_TOKEN: str = "TEST-MERCADOPAGO-ACCESS-TOKEN-MOCK"
@@ -28,6 +29,12 @@ class Settings(BaseSettings):
     
     # Uploads
     UPLOAD_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
+
+    # WhatsApp Notifications (Evolution API / Z-API / Webhook)
+    WHATSAPP_ENABLED: bool = True
+    WHATSAPP_API_URL: str = ""
+    WHATSAPP_API_KEY: str = ""
+    WHATSAPP_INSTANCE_NAME: str = "rifa-digital"
     
     # CORS
     CORS_ORIGINS: List[str] = [
@@ -51,6 +58,7 @@ class Settings(BaseSettings):
             if self.CREDENTIAL_ENCRYPTION_KEY == "development-only-credential-key":
                 raise ValueError("CREDENTIAL_ENCRYPTION_KEY deve ser configurada em produção")
             self.ENABLE_PAYMENT_SIMULATOR = False
+            self.REQUIRE_ORDER_ACCESS_TOKEN = True
         return self
 
 settings = Settings()

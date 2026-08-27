@@ -32,6 +32,7 @@ class OrderResponse(BaseModel):
     created_at: datetime
     tickets: List[str] = [] # Numbers assigned to this order
     lucky_numbers_won: List[dict] = [] # Any instant prize won!
+    access_token: Optional[str] = None
 
     class Config:
         from_attributes = True

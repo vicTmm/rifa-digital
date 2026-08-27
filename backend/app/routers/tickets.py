@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Dict, Any
 from backend.app.database import get_db
 from backend.app.models.raffle import Raffle
@@ -39,15 +40,22 @@ def get_raffle_number_grid(raffle_id: int, db: Session = Depends(get_db)):
     }
 
 @router.get("/my-tickets", response_model=List[CustomerRaffleTickets])
-def search_my_tickets(query: str = Query(..., min_length=4, description="Telefone ou CPF do comprador"), db: Session = Depends(get_db)):
+def search_my_tickets(query: str = Query(..., min_length=8, description="Telefone completo ou CPF do comprador"), db: Session = Depends(get_db)):
     """Finds all purchased tickets by customer phone or CPF"""
     clean_query = query.replace(".", "").replace("-", "").replace("(", "").replace(")", "").replace(" ", "")
+    if len(clean_query) not in {10, 11}:
+        raise HTTPException(status_code=400, detail="Informe um telefone completo com DDD ou CPF.")
+
+    normalized_phone = func.replace(func.replace(func.replace(func.replace(func.replace(
+        Order.customer_phone, ".", ""), "-", ""), "(", ""), ")", ""), " ", "")
+    normalized_cpf = func.replace(func.replace(func.replace(
+        Order.customer_cpf, ".", ""), "-", ""), " ", "")
     
     orders = (
         db.query(Order)
         .filter(
-            (Order.customer_phone.ilike(f"%{clean_query}%")) | 
-            (Order.customer_cpf.ilike(f"%{clean_query}%"))
+            (normalized_phone == clean_query) |
+            (normalized_cpf == clean_query)
         )
         .order_by(Order.created_at.desc())
         .all()
