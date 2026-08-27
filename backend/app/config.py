@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     MERCADO_PAGO_ACCESS_TOKEN: str = "TEST-MERCADOPAGO-ACCESS-TOKEN-MOCK"
     ENABLE_PAYMENT_SIMULATOR: bool = True
     MERCADO_PAGO_WEBHOOK_SECRET: str = ""
+    CREDENTIAL_ENCRYPTION_KEY: str = "development-only-credential-key"
     
     # Uploads
     UPLOAD_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
@@ -47,6 +48,8 @@ class Settings(BaseSettings):
                 raise ValueError("SECRET_KEY deve ser configurada em produção")
             if not self.MERCADO_PAGO_WEBHOOK_SECRET:
                 raise ValueError("MERCADO_PAGO_WEBHOOK_SECRET deve ser configurado em produção")
+            if self.CREDENTIAL_ENCRYPTION_KEY == "development-only-credential-key":
+                raise ValueError("CREDENTIAL_ENCRYPTION_KEY deve ser configurada em produção")
             self.ENABLE_PAYMENT_SIMULATOR = False
         return self
 

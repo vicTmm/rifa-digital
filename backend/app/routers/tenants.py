@@ -12,6 +12,7 @@ from backend.app.schemas.financial import WithdrawalCreate, WithdrawalResponse
 from backend.app.schemas.tenant import TenantUpdate, TenantResponse, TenantPublic
 from backend.app.schemas.raffle import RafflePublicItem
 from backend.app.services.auth import get_current_organizer
+from backend.app.services.credentials import CredentialService
 
 router = APIRouter(prefix="/tenants", tags=["Organizadores / Lojas"])
 
@@ -227,9 +228,9 @@ def update_organizer_profile(
     if payload.pix_key_type is not None:
         tenant.pix_key_type = payload.pix_key_type
     if payload.mp_access_token is not None:
-        tenant.mp_access_token = payload.mp_access_token
+        tenant.mp_access_token = CredentialService.encrypt(payload.mp_access_token)
     if payload.mp_public_key is not None:
-        tenant.mp_public_key = payload.mp_public_key
+        tenant.mp_public_key = CredentialService.encrypt(payload.mp_public_key)
         
     db.commit()
     db.refresh(tenant)

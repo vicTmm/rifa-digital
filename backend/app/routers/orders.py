@@ -12,6 +12,7 @@ from backend.app.schemas.order import OrderCreate, OrderResponse, OrderStatusRes
 from backend.app.services.raffle_service import RaffleService
 from backend.app.services.mercadopago_service import MercadoPagoService
 from backend.app.config import settings
+from backend.app.services.credentials import CredentialService
 
 router = APIRouter(prefix="/orders", tags=["Pedidos e Checkout PIX"])
 
@@ -53,7 +54,7 @@ async def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
     
     # Get organizer custom credentials if present
     tenant = db.query(Tenant).filter(Tenant.id == raffle.tenant_id).first()
-    custom_mp_token = tenant.mp_access_token if tenant else None
+    custom_mp_token = CredentialService.decrypt(tenant.mp_access_token) if tenant else None
     
     # Generate PIX Payment
     payment_data = await MercadoPagoService.create_pix_payment(
@@ -220,7 +221,7 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
             return {"status": "ignored"}
 
         tenant = db.query(Tenant).filter(Tenant.id == order.raffle.tenant_id).first()
-        access_token = tenant.mp_access_token if tenant and tenant.mp_access_token else settings.MERCADO_PAGO_ACCESS_TOKEN
+        access_token = CredentialService.decrypt(tenant.mp_access_token) if tenant and tenant.mp_access_token else settings.MERCADO_PAGO_ACCESS_TOKEN
         payment = await MercadoPagoService.get_payment(payment_id, access_token)
         if not payment:
             raise HTTPException(status_code=502, detail="Não foi possível validar o pagamento.")
