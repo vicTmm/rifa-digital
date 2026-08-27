@@ -25,22 +25,37 @@ export default function SuperAdminPage() {
 
   const [stats, setStats] = useState<any>(null);
   const [tenants, setTenants] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, tenantsRes] = await Promise.all([
+      const [statsRes, tenantsRes, withdrawalsRes] = await Promise.all([
         api.get("/admin/stats"),
         api.get("/admin/tenants"),
+        api.get("/admin/withdrawals"),
       ]);
       setStats(statsRes.data);
       setTenants(tenantsRes.data);
+      setWithdrawals(withdrawalsRes.data);
     } catch (err) {
       console.error("Admin fetch error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleWithdrawal = async (id: number, status: string) => {
+    const admin_notes = status === "REJECTED" ? window.prompt("Motivo da rejeição:") : undefined;
+    if (status === "REJECTED" && !admin_notes) return;
+    const proof_url = status === "COMPLETED" ? window.prompt("URL do comprovante (opcional):") : undefined;
+    try {
+      await api.put(`/admin/withdrawals/${id}`, { status, admin_notes, proof_url });
+      fetchData();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Erro ao processar saque.");
     }
   };
 
@@ -145,6 +160,34 @@ export default function SuperAdminPage() {
           </div>
         </div>
       )}
+
+      <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 space-y-5 shadow-xl">
+        <div>
+          <h2 className="text-lg font-bold text-white">Solicitações de saque</h2>
+          <p className="text-xs text-zinc-500">Aprove, conclua após o PIX ou rejeite para devolver o saldo.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-zinc-300">
+            <thead className="border-b border-zinc-800 text-zinc-500"><tr><th className="py-3">Organizador</th><th>Valor</th><th>Chave PIX</th><th>Status</th><th className="text-right">Ações</th></tr></thead>
+            <tbody className="divide-y divide-zinc-800">
+              {withdrawals.map((item) => (
+                <tr key={item.id}>
+                  <td className="py-3">{item.tenant_name || `#${item.tenant_id}`}</td>
+                  <td className="font-bold text-emerald-400">R$ {item.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                  <td>{item.pix_key_type}: {item.pix_key}</td>
+                  <td className="font-bold">{item.status}</td>
+                  <td className="text-right space-x-2">
+                    {item.status === "PENDING" && <button onClick={() => handleWithdrawal(item.id, "APPROVED")} className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30">Aprovar</button>}
+                    {item.status === "APPROVED" && <button onClick={() => handleWithdrawal(item.id, "COMPLETED")} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Concluir</button>}
+                    {(item.status === "PENDING" || item.status === "APPROVED") && <button onClick={() => handleWithdrawal(item.id, "REJECTED")} className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/30">Rejeitar</button>}
+                  </td>
+                </tr>
+              ))}
+              {withdrawals.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-zinc-500">Nenhuma solicitação.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Organizers List Table */}
       <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 space-y-5 shadow-xl">

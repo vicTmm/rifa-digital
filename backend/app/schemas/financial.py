@@ -4,8 +4,11 @@ from datetime import datetime
 
 class WithdrawalCreate(BaseModel):
     amount: float = Field(gt=0)
-    pix_key: str
-    pix_key_type: str # CPF, CNPJ, EMAIL, TELEFONE, ALEATORIA
+
+class WithdrawalProcess(BaseModel):
+    status: str
+    admin_notes: Optional[str] = None
+    proof_url: Optional[str] = None
 
 class WithdrawalResponse(BaseModel):
     id: int
@@ -18,6 +21,7 @@ class WithdrawalResponse(BaseModel):
     proof_url: Optional[str] = None
     requested_at: datetime
     processed_at: Optional[datetime] = None
+    tenant_name: Optional[str] = None
 
     class Config:
         from_attributes = True

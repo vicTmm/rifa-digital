@@ -25,14 +25,15 @@ import {
   Sparkles,
   Zap,
   Clock,
-  Play
+  Play,
+  Wallet
 } from "lucide-react";
 
 export default function OrganizerDashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"CAMPAIGNS" | "NEW_RAFFLE" | "DRAW" | "SETTINGS">("CAMPAIGNS");
+  const [activeTab, setActiveTab] = useState<"CAMPAIGNS" | "NEW_RAFFLE" | "DRAW" | "WITHDRAWALS" | "SETTINGS">("CAMPAIGNS");
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [myRaffles, setMyRaffles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,25 +66,32 @@ export default function OrganizerDashboardPage() {
   const [storeWhatsapp, setStoreWhatsapp] = useState("");
   const [storeInstagram, setStoreInstagram] = useState("");
   const [storePixKey, setStorePixKey] = useState("");
+  const [storePixKeyType, setStorePixKeyType] = useState("CPF");
   const [storeMpToken, setStoreMpToken] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState("");
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [withdrawalAmount, setWithdrawalAmount] = useState("");
+  const [requestingWithdrawal, setRequestingWithdrawal] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [dashRes, rafflesRes] = await Promise.all([
+      const [dashRes, rafflesRes, withdrawalsRes] = await Promise.all([
         api.get("/tenants/me/dashboard"),
         api.get("/raffles/my-raffles"),
+        api.get("/tenants/me/withdrawals"),
       ]);
       setDashboardData(dashRes.data);
       setMyRaffles(rafflesRes.data);
+      setWithdrawals(withdrawalsRes.data);
 
       if (dashRes.data.tenant) {
         setStoreName(dashRes.data.tenant.name || "");
         setStoreSlug(dashRes.data.tenant.slug || "");
         setStoreWhatsapp(dashRes.data.tenant.whatsapp || "");
         setStorePixKey(dashRes.data.tenant.pix_key || "");
+        setStorePixKeyType(dashRes.data.tenant.pix_key_type || "CPF");
       }
     } catch (err) {
       console.error("Error loading dashboard:", err);
@@ -188,6 +196,7 @@ export default function OrganizerDashboardPage() {
         whatsapp: storeWhatsapp,
         instagram: storeInstagram,
         pix_key: storePixKey,
+        pix_key_type: storePixKeyType,
         mp_access_token: storeMpToken || undefined,
       });
       setSettingsSuccess("Configurações salvas com sucesso!");
@@ -196,6 +205,20 @@ export default function OrganizerDashboardPage() {
       alert(err.response?.data?.detail || "Erro ao salvar configurações.");
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const handleRequestWithdrawal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRequestingWithdrawal(true);
+    try {
+      await api.post("/tenants/me/withdrawals", { amount: Number(withdrawalAmount) });
+      setWithdrawalAmount("");
+      await fetchData();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Erro ao solicitar saque.");
+    } finally {
+      setRequestingWithdrawal(false);
     }
   };
 
@@ -331,6 +354,17 @@ export default function OrganizerDashboardPage() {
         </button>
 
         <button
+          onClick={() => setActiveTab("WITHDRAWALS")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "WITHDRAWALS"
+              ? "bg-emerald-500 text-zinc-950"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+          }`}
+        >
+          <Wallet className="w-4 h-4" /> Saques
+        </button>
+
+        <button
           onClick={() => setActiveTab("SETTINGS")}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === "SETTINGS"
@@ -422,6 +456,45 @@ export default function OrganizerDashboardPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === "WITHDRAWALS" && (
+        <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+          <form onSubmit={handleRequestWithdrawal} className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 space-y-4 h-fit">
+            <div>
+              <h2 className="text-lg font-black text-white">Solicitar saque</h2>
+              <p className="text-xs text-zinc-400">O valor ficará reservado até a análise administrativa.</p>
+            </div>
+            <div className="rounded-2xl bg-zinc-950 border border-zinc-800 p-4">
+              <span className="text-xs text-zinc-500">Saldo disponível</span>
+              <p className="text-2xl font-black text-emerald-400">R$ {(tenant.available_balance || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+            </div>
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              required
+              value={withdrawalAmount}
+              onChange={(e) => setWithdrawalAmount(e.target.value)}
+              placeholder="Valor do saque"
+              className="w-full rounded-xl bg-zinc-950 border border-zinc-800 px-3.5 py-3 text-sm text-white focus:outline-none focus:border-emerald-500"
+            />
+            <p className="text-[11px] text-zinc-500">PIX: {tenant.pix_key || "Configure uma chave PIX na aba de configurações."}</p>
+            <button disabled={requestingWithdrawal || !tenant.pix_key} className="w-full rounded-2xl bg-emerald-500 py-3 text-sm font-black text-zinc-950 disabled:opacity-50">
+              {requestingWithdrawal ? "Solicitando..." : "Solicitar saque"}
+            </button>
+          </form>
+          <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 overflow-x-auto">
+            <h2 className="text-lg font-black text-white mb-4">Histórico de saques</h2>
+            <table className="w-full text-left text-xs">
+              <thead className="text-zinc-500 border-b border-zinc-800"><tr><th className="py-3">Data</th><th>Valor</th><th>Status</th><th>Observação</th></tr></thead>
+              <tbody className="divide-y divide-zinc-800">
+                {withdrawals.map((item) => <tr key={item.id} className="text-zinc-300"><td className="py-3">{new Date(item.requested_at).toLocaleString("pt-BR")}</td><td>R$ {item.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td><td className="font-bold">{item.status}</td><td>{item.admin_notes || "-"}</td></tr>)}
+                {withdrawals.length === 0 && <tr><td colSpan={4} className="py-8 text-center text-zinc-500">Nenhum saque solicitado.</td></tr>}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -768,6 +841,9 @@ export default function OrganizerDashboardPage() {
               <label className="block text-xs font-semibold text-zinc-300 mb-1">
                 Chave PIX para Receber Saques de Lucro
               </label>
+              <select value={storePixKeyType} onChange={(e) => setStorePixKeyType(e.target.value)} className="w-full mb-2 rounded-xl bg-zinc-950 border border-zinc-800 px-3.5 py-3 text-sm text-white">
+                <option value="CPF">CPF</option><option value="CNPJ">CNPJ</option><option value="EMAIL">E-mail</option><option value="TELEFONE">Telefone</option><option value="ALEATORIA">Aleatória</option>
+              </select>
               <input
                 type="text"
                 placeholder="CPF, CNPJ, Telefone, E-mail ou Chave Aleatória"

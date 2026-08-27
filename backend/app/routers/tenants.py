@@ -7,11 +7,63 @@ from backend.app.models.tenant import Tenant
 from backend.app.models.raffle import Raffle, RaffleStatus
 from backend.app.models.order import Order, OrderStatus
 from backend.app.models.user import User
+from backend.app.models.financial import WithdrawalRequest, WithdrawalStatus
+from backend.app.schemas.financial import WithdrawalCreate, WithdrawalResponse
 from backend.app.schemas.tenant import TenantUpdate, TenantResponse, TenantPublic
 from backend.app.schemas.raffle import RafflePublicItem
 from backend.app.services.auth import get_current_organizer
 
 router = APIRouter(prefix="/tenants", tags=["Organizadores / Lojas"])
+
+@router.get("/me/withdrawals", response_model=List[WithdrawalResponse])
+def list_my_withdrawals(
+    current_user: User = Depends(get_current_organizer),
+    db: Session = Depends(get_db),
+):
+    tenant = current_user.tenant
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Perfil de organizador não encontrado.")
+    return (
+        db.query(WithdrawalRequest)
+        .filter(WithdrawalRequest.tenant_id == tenant.id)
+        .order_by(WithdrawalRequest.requested_at.desc())
+        .all()
+    )
+
+@router.post("/me/withdrawals", response_model=WithdrawalResponse, status_code=status.HTTP_201_CREATED)
+def request_withdrawal(
+    payload: WithdrawalCreate,
+    current_user: User = Depends(get_current_organizer),
+    db: Session = Depends(get_db),
+):
+    tenant = (
+        db.query(Tenant)
+        .filter(Tenant.id == current_user.tenant.id)
+        .with_for_update()
+        .first()
+    ) if current_user.tenant else None
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Perfil de organizador não encontrado.")
+    if not tenant.pix_key or not tenant.pix_key_type:
+        raise HTTPException(status_code=400, detail="Configure sua chave PIX antes de solicitar um saque.")
+
+    amount = round(payload.amount, 2)
+    available = round(tenant.available_balance or 0.0, 2)
+    if amount > available:
+        raise HTTPException(status_code=400, detail="Saldo disponível insuficiente.")
+
+    withdrawal = WithdrawalRequest(
+        tenant_id=tenant.id,
+        amount=amount,
+        pix_key=tenant.pix_key,
+        pix_key_type=tenant.pix_key_type,
+        status=WithdrawalStatus.PENDING.value,
+    )
+    tenant.available_balance = round(available - amount, 2)
+    db.add(withdrawal)
+    db.commit()
+    db.refresh(withdrawal)
+    return withdrawal
 
 @router.get("/{slug}", response_model=TenantPublic)
 def get_tenant_by_slug(slug: str, db: Session = Depends(get_db)):
@@ -129,6 +181,7 @@ def get_organizer_dashboard(current_user: User = Depends(get_current_organizer),
             "total_sales_amount": tenant.total_sales_amount or 0.0,
             "is_verified": tenant.is_verified,
             "pix_key": tenant.pix_key,
+            "pix_key_type": tenant.pix_key_type,
             "has_custom_mercadopago": bool(tenant.mp_access_token)
         },
         "stats": {
