@@ -7,12 +7,13 @@ from backend.app.models.tenant import Tenant
 from backend.app.models.raffle import Raffle, RaffleStatus
 from backend.app.models.order import Order, OrderStatus
 from backend.app.models.user import User
-from backend.app.models.financial import WithdrawalRequest, WithdrawalStatus
+from backend.app.models.financial import WithdrawalRequest, WithdrawalStatus, FinancialLedgerEntry, LedgerEntryType
 from backend.app.schemas.financial import WithdrawalCreate, WithdrawalResponse
 from backend.app.schemas.tenant import TenantUpdate, TenantResponse, TenantPublic
 from backend.app.schemas.raffle import RafflePublicItem
 from backend.app.services.auth import get_current_organizer
 from backend.app.services.credentials import CredentialService
+from backend.app.services.financial import FinancialService, money
 
 router = APIRouter(prefix="/tenants", tags=["Organizadores / Lojas"])
 
@@ -30,6 +31,37 @@ def list_my_withdrawals(
         .order_by(WithdrawalRequest.requested_at.desc())
         .all()
     )
+
+@router.get("/me/ledger")
+def list_my_ledger(
+    limit: int = 100,
+    current_user: User = Depends(get_current_organizer),
+    db: Session = Depends(get_db),
+):
+    tenant = current_user.tenant
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Perfil de organizador não encontrado.")
+    safe_limit = min(max(limit, 1), 500)
+    entries = (
+        db.query(FinancialLedgerEntry)
+        .filter(FinancialLedgerEntry.tenant_id == tenant.id)
+        .order_by(FinancialLedgerEntry.created_at.desc(), FinancialLedgerEntry.id.desc())
+        .limit(safe_limit)
+        .all()
+    )
+    return [
+        {
+            "id": entry.id,
+            "type": entry.entry_type,
+            "amount": float(entry.amount),
+            "balance_after": float(entry.balance_after),
+            "description": entry.description,
+            "order_id": entry.order_id,
+            "withdrawal_id": entry.withdrawal_id,
+            "created_at": entry.created_at,
+        }
+        for entry in entries
+    ]
 
 @router.post("/me/withdrawals", response_model=WithdrawalResponse, status_code=status.HTTP_201_CREATED)
 def request_withdrawal(
@@ -62,6 +94,17 @@ def request_withdrawal(
     )
     tenant.available_balance = round(available - amount, 2)
     db.add(withdrawal)
+    db.flush()
+    FinancialService.add_ledger_entry(
+        db,
+        tenant_id=tenant.id,
+        withdrawal_id=withdrawal.id,
+        entry_type=LedgerEntryType.WITHDRAWAL_RESERVE,
+        amount=-money(amount),
+        balance_after=tenant.available_balance,
+        description=f"Reserva para saque #{withdrawal.id}",
+        idempotency_key=f"withdrawal-reserve:{withdrawal.id}",
+    )
     db.commit()
     db.refresh(withdrawal)
     return withdrawal

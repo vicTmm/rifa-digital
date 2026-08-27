@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from backend.app.database import Base
-from backend.app.models import Tenant, User, UserRole, WithdrawalStatus
+from backend.app.models import Tenant, User, UserRole, WithdrawalStatus, FinancialLedgerEntry, LedgerEntryType
 from backend.app.routers.admin import process_withdrawal
 from backend.app.routers.tenants import request_withdrawal
 from backend.app.schemas.financial import WithdrawalCreate, WithdrawalProcess
@@ -49,6 +49,9 @@ def test_request_reserves_balance_and_rejection_restores_it():
     withdrawal = request_withdrawal(WithdrawalCreate(amount=40), organizer, db)
     assert withdrawal.status == WithdrawalStatus.PENDING.value
     assert organizer.tenant.available_balance == 60.0
+    reserve = db.query(FinancialLedgerEntry).one()
+    assert reserve.entry_type == LedgerEntryType.WITHDRAWAL_RESERVE.value
+    assert float(reserve.amount) == -40.0
 
     admin = User(role=UserRole.SUPERADMIN.value)
     result = process_withdrawal(
@@ -60,6 +63,7 @@ def test_request_reserves_balance_and_rejection_restores_it():
     db.refresh(organizer.tenant)
     assert result["status"] == WithdrawalStatus.REJECTED.value
     assert organizer.tenant.available_balance == 100.0
+    assert db.query(FinancialLedgerEntry).count() == 2
 
 
 def test_completed_withdrawal_does_not_restore_balance():

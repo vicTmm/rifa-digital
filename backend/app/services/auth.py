@@ -48,6 +48,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     return user
 
+# Explicit dependency name used by authenticated feature routers such as uploads.
+# get_current_user already rejects inactive accounts.
+get_current_active_user = get_current_user
+
 def get_current_organizer(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
     if current_user.role not in [UserRole.ORGANIZER.value, UserRole.SUPERADMIN.value]:
         raise HTTPException(

@@ -8,9 +8,10 @@ from backend.app.models.user import User, UserRole
 from backend.app.models.tenant import Tenant
 from backend.app.models.raffle import Raffle, RaffleStatus
 from backend.app.models.order import Order, OrderStatus
-from backend.app.models.financial import WithdrawalRequest, WithdrawalStatus
+from backend.app.models.financial import WithdrawalRequest, WithdrawalStatus, LedgerEntryType
 from backend.app.schemas.financial import AdminStatsResponse, WithdrawalResponse, WithdrawalProcess
 from backend.app.services.auth import get_current_admin
+from backend.app.services.financial import FinancialService, money
 
 router = APIRouter(prefix="/admin", tags=["Super Administrador"])
 
@@ -130,7 +131,17 @@ def process_withdrawal(
 
     if payload.status == WithdrawalStatus.REJECTED.value:
         tenant = db.query(Tenant).filter(Tenant.id == withdrawal.tenant_id).with_for_update().first()
-        tenant.available_balance = round((tenant.available_balance or 0.0) + withdrawal.amount, 2)
+        tenant.available_balance = float(money(tenant.available_balance) + money(withdrawal.amount))
+        FinancialService.add_ledger_entry(
+            db,
+            tenant_id=tenant.id,
+            withdrawal_id=withdrawal.id,
+            entry_type=LedgerEntryType.WITHDRAWAL_REVERSAL,
+            amount=withdrawal.amount,
+            balance_after=tenant.available_balance,
+            description=f"Estorno do saque rejeitado #{withdrawal.id}",
+            idempotency_key=f"withdrawal-reversal:{withdrawal.id}",
+        )
 
     withdrawal.status = payload.status
     withdrawal.admin_notes = payload.admin_notes

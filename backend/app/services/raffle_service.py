@@ -9,6 +9,8 @@ from backend.app.models.order import Order, OrderStatus
 from backend.app.models.ticket import Ticket, TicketStatus
 from backend.app.models.tenant import Tenant
 from backend.app.config import settings
+from backend.app.models.financial import LedgerEntryType
+from backend.app.services.financial import FinancialService, money
 
 class RaffleService:
     @staticmethod
@@ -162,8 +164,18 @@ class RaffleService:
         
         # Update Tenant Balance
         if tenant:
-            tenant.available_balance = (tenant.available_balance or 0.0) + net_amount
-            tenant.total_sales_amount = (tenant.total_sales_amount or 0.0) + order.total_amount
+            tenant.available_balance = float(money(tenant.available_balance) + money(net_amount))
+            tenant.total_sales_amount = float(money(tenant.total_sales_amount) + money(order.total_amount))
+            FinancialService.add_ledger_entry(
+                db,
+                tenant_id=tenant.id,
+                order_id=order.id,
+                entry_type=LedgerEntryType.SALE_CREDIT,
+                amount=net_amount,
+                balance_after=tenant.available_balance,
+                description=f"Crédito líquido da venda #{order.id}",
+                idempotency_key=f"sale-credit:{order.id}",
+            )
             
         # Update tickets & Check Cotas Premiadas
         lucky_prizes_won = []
