@@ -13,6 +13,7 @@ from backend.app.schemas.financial import AdminStatsResponse, WithdrawalResponse
 from backend.app.services.auth import get_current_admin
 from backend.app.services.financial import FinancialService, money
 from backend.app.models.payment import PaymentEvent
+from backend.app.services.payment_reconciliation import PaymentReconciliationService
 
 router = APIRouter(prefix="/admin", tags=["Super Administrador"])
 
@@ -41,6 +42,14 @@ def list_payment_events(
         }
         for event in events
     ]
+
+@router.post("/payments/reconcile")
+async def reconcile_payments(
+    limit: int = 100,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    return await PaymentReconciliationService.reconcile_pending(db, limit)
 
 @router.get("/stats", response_model=AdminStatsResponse)
 def get_admin_stats(current_admin: User = Depends(get_current_admin), db: Session = Depends(get_db)):

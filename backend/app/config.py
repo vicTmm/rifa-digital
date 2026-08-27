@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     DEFAULT_PLATFORM_FEE_PERCENT: float = 5.0 # 5% default fee
     ORDER_RESERVATION_MINUTES: int = 15 # 15 min to pay PIX
     EXPIRED_ORDER_CLEANUP_INTERVAL_SECONDS: int = 60
+    PAYMENT_RECONCILIATION_INTERVAL_SECONDS: int = 300
     REQUIRE_ORDER_ACCESS_TOKEN: bool = False
     
     # Mercado Pago
