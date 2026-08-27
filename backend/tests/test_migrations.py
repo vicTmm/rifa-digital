@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, inspect, text
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-ALEMBIC_HEAD = "20260827_07"
+ALEMBIC_HEAD = "20260827_08"
 EXPECTED_TABLES = {
     "alembic_version",
     "draw_audits",

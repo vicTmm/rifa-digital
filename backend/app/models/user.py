@@ -23,6 +23,11 @@ class User(Base):
     avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    password_reset_token_hash = Column(String, nullable=True, index=True)
+    password_reset_expires_at = Column(DateTime, nullable=True)
+    email_verification_token_hash = Column(String, nullable=True, index=True)
+    email_verification_expires_at = Column(DateTime, nullable=True)
+    email_verified_at = Column(DateTime, nullable=True)
 
     # Relationships
     tenant = relationship("Tenant", back_populates="owner", uselist=False)

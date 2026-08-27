@@ -3,6 +3,7 @@ import re
 from typing import List, Dict, Any, Optional
 import httpx
 from backend.app.config import settings
+from backend.app.services.security import mask_phone, redact_text
 
 logger = logging.getLogger("whatsapp_service")
 
@@ -47,19 +48,19 @@ class WhatsAppService:
                     url = f"{settings.WHATSAPP_API_URL.rstrip('/')}/message/sendText/{settings.WHATSAPP_INSTANCE_NAME}"
                     response = await client.post(url, json=payload, headers=headers)
                     if response.status_code in (200, 201):
-                        logger.info(f"WhatsApp message sent successfully to {formatted_phone}")
+                        logger.info("WhatsApp message sent successfully", extra={"phone": mask_phone(formatted_phone)})
                         return True
                     else:
-                        logger.error(f"WhatsApp API error ({response.status_code}): {response.text}")
+                        logger.error("WhatsApp API error", extra={"status_code": response.status_code, "response": redact_text(response.text)})
             except Exception as e:
-                logger.error(f"Failed to connect to WhatsApp API: {str(e)}")
+                logger.error("Failed to connect to WhatsApp API", extra={"error": redact_text(e)})
         else:
             # Development / Mock Notification Log
             logger.info(
                 f"\n{'='*55}\n"
-                f"📲 [WHATSAPP DISPATCH SIMULATOR] Destinatário: +{formatted_phone}\n"
+                f"📲 [WHATSAPP DISPATCH SIMULATOR] Destinatário: +{mask_phone(formatted_phone)}\n"
                 f"{'-'*55}\n"
-                f"{message}\n"
+                "Mensagem omitida dos logs por privacidade.\n"
                 f"{'='*55}"
             )
             return True

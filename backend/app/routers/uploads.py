@@ -4,6 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from PIL import Image, UnidentifiedImageError
+from PIL import ImageFile
 
 from backend.app.config import settings
 from backend.app.models.user import User
@@ -17,6 +18,9 @@ ALLOWED_IMAGE_TYPES = {
     "image/webp": (".webp", "WEBP"),
 }
 MAX_FILE_SIZE = 10 * 1024 * 1024
+MAX_IMAGE_PIXELS = 25_000_000
+Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
+ImageFile.LOAD_TRUNCATED_IMAGES = False
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -38,7 +42,12 @@ async def upload_image(
         with Image.open(io.BytesIO(content)) as image:
             image.verify()
             detected_format = (image.format or "").upper()
-    except (UnidentifiedImageError, OSError):
+            width, height = image.size
+            if width * height > MAX_IMAGE_PIXELS:
+                raise HTTPException(status_code=400, detail="Dimensões da imagem excedem o limite permitido.")
+    except HTTPException:
+        raise
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
         raise HTTPException(status_code=400, detail="Arquivo de imagem inválido ou corrompido.")
 
     if detected_format != expected_format:

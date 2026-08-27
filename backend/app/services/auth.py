@@ -58,6 +58,12 @@ def get_current_organizer(current_user: User = Depends(get_current_user), db: Se
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso restrito a organizadores"
         )
+    if current_user.role == UserRole.ORGANIZER.value:
+        from backend.app.models.tenant import Tenant
+        tenant = db.query(Tenant).filter(Tenant.user_id == current_user.id, Tenant.is_active == True).first()
+        if tenant is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tenant do organizador indisponível")
+        current_user.tenant = tenant
     return current_user
 
 def get_current_admin(current_user: User = Depends(get_current_user)) -> User:

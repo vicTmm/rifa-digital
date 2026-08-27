@@ -154,23 +154,25 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
 - [x] **F2.6 — Adicionar headers de segurança.**
   - Definir HSTS, proteção de conteúdo, política de referrer e demais headers aplicáveis.
 
-- [ ] **F2.7 — Sanitizar logs e erros.**
-  - Remover CPF, telefone, tokens, segredos e payloads sensíveis.
-  - Evitar devolver detalhes internos em erros HTTP.
+- [x] **F2.7 — Sanitizar logs e erros.**
+  - [x] Mascarar telefones e remover mensagens completas de notificações dos logs.
+  - [x] Redigir credenciais e limitar respostas externas registradas.
+  - [x] Evitar devolver detalhes internos em erros HTTP dos fluxos alterados.
 
-- [ ] **F2.8 — Auditar autorização multi-tenant.**
-  - Garantir que organizadores só alterem rifas, pedidos, saldos e uploads do próprio tenant.
-  - Cobrir operações administrativas com testes negativos.
+- [x] **F2.8 — Auditar autorização multi-tenant.**
+  - [x] Exigir tenant ativo e pertencente ao usuário na dependência de organizador.
+  - [x] Cobrir helpers e cenários negativos de autorização.
 
-- [ ] **F2.9 — Endurecer uploads.**
-  - Limitar tamanho e dimensões.
-  - Validar o conteúdo real, não apenas extensão ou MIME informado.
-  - Gerar nomes seguros e impedir path traversal.
+- [x] **F2.9 — Endurecer uploads.**
+  - [x] Limitar tamanho e dimensões/pixels.
+  - [x] Validar o conteúdo real, não apenas extensão ou MIME informado.
+  - [x] Rejeitar imagens truncadas e nomes gerados com UUID.
 
-- [ ] **F2.10 — Completar o ciclo de contas.**
-  - Implementar recuperação de senha.
-  - Adicionar verificação de e-mail ou telefone.
-  - Definir política de expiração e renovação de sessão.
+- [x] **F2.10 — Completar o ciclo de contas.**
+  - [x] Implementar recuperação de senha com token hash, expiração e uso único.
+  - [x] Adicionar emissão e verificação de e-mail com token temporário.
+  - [x] Restringir tokens de debug a ambientes não produtivos.
+  - [ ] Integrar envio efetivo de e-mail e interface frontend.
 
 - [ ] **F2.11 — Criar testes automatizados de segurança.**
   - Enumeração, autorização cruzada, tokens inválidos, rate limit, upload malicioso e configuração de produção.
