@@ -20,6 +20,8 @@ from backend.app.schemas.raffle import (
 from backend.app.services.auth import get_current_organizer
 from backend.app.services.raffle_service import RaffleService
 from backend.app.services.whatsapp_service import WhatsAppService
+from backend.app.services.draw_audit import DrawAuditService
+from backend.app.models.draw import DrawAudit
 
 router = APIRouter(prefix="/raffles", tags=["Campanhas de Rifas"])
 
@@ -282,6 +284,12 @@ def execute_draw(
         raise HTTPException(status_code=400, detail="Nenhuma cota paga encontrada para realizar o sorteio.")
         
     winning_ticket = None
+
+    if not payload.winning_number and raffle.draw_type != DrawType.AUTOMATIC.value:
+        raise HTTPException(
+            status_code=400,
+            detail="Informe o número vencedor para sorteios manuais ou pela Loteria Federal.",
+        )
     
     if payload.winning_number:
         # Match specified number (e.g. from Federal Lottery)
@@ -292,9 +300,15 @@ def execute_draw(
                 status_code=400,
                 detail=f"O número {formatted_input} não foi comprado ou pago por nenhum participante."
             )
-    else:
-        # Random automatic pick among paid tickets
-        winning_ticket = random.choice(paid_tickets)
+    audit, winning_ticket = DrawAuditService.create_audit(
+        db,
+        raffle_id=raffle.id,
+        draw_type=raffle.draw_type,
+        tickets=paid_tickets,
+        winning_ticket=winning_ticket,
+        proof_url=payload.draw_proof_url,
+        notes=payload.draw_notes,
+    )
         
     raffle.status = RaffleStatus.DRAWN.value
     raffle.winner_number = winning_ticket.number_str
@@ -321,5 +335,36 @@ def execute_draw(
         "message": "Sorteio realizado com sucesso!",
         "winner_number": raffle.winner_number,
         "winner_name": raffle.winner_name,
-        "drawn_at": raffle.drawn_at
+        "drawn_at": raffle.drawn_at,
+        "audit": {
+            "snapshot_hash": audit.snapshot_hash,
+            "algorithm": audit.algorithm,
+            "entropy": audit.entropy,
+            "selection_hash": audit.selection_hash,
+            "eligible_count": audit.eligible_count,
+        },
+    }
+
+@router.get("/{slug}/draw-audit")
+def get_draw_audit(slug: str, db: Session = Depends(get_db)):
+    raffle = db.query(Raffle).filter(Raffle.slug == slug).first()
+    if not raffle:
+        raise HTTPException(status_code=404, detail="Rifa não encontrada.")
+    audit = db.query(DrawAudit).filter(DrawAudit.raffle_id == raffle.id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Sorteio ainda não realizado.")
+    return {
+        "raffle_id": raffle.id,
+        "draw_type": audit.draw_type,
+        "algorithm": audit.algorithm,
+        "eligible_count": audit.eligible_count,
+        "eligible_snapshot": audit.eligible_snapshot,
+        "snapshot_hash": audit.snapshot_hash,
+        "entropy": audit.entropy,
+        "selection_hash": audit.selection_hash,
+        "selected_index": audit.selected_index,
+        "winning_number": audit.winning_number,
+        "proof_url": audit.proof_url,
+        "notes": audit.notes,
+        "created_at": audit.created_at,
     }

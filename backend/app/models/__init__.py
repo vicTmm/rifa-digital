@@ -5,6 +5,7 @@ from backend.app.models.order import Order, OrderStatus
 from backend.app.models.ticket import Ticket, TicketStatus
 from backend.app.models.financial import WithdrawalRequest, WithdrawalStatus, FinancialLedgerEntry, LedgerEntryType
 from backend.app.models.payment import PaymentEvent
+from backend.app.models.draw import DrawAudit
 
 __all__ = [
     "User", "UserRole",
@@ -13,5 +14,5 @@ __all__ = [
     "Order", "OrderStatus",
     "Ticket", "TicketStatus",
     "WithdrawalRequest", "WithdrawalStatus", "FinancialLedgerEntry", "LedgerEntryType",
-    "PaymentEvent"
+    "PaymentEvent", "DrawAudit"
 ]
