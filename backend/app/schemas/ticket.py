@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -21,7 +21,7 @@ class CustomerRaffleTickets(BaseModel):
     total_amount: float
     paid_at: Optional[datetime] = None
     tickets: List[str]
-    lucky_prizes: List[dict] = []
+    lucky_prizes: List[dict] = Field(default_factory=list)
 
 class MyTicketsQuery(BaseModel):
     phone_or_cpf: str

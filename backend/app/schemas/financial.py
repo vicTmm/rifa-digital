@@ -1,16 +1,17 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal, Optional
 from datetime import datetime
 
 class WithdrawalCreate(BaseModel):
     amount: float = Field(gt=0)
 
 class WithdrawalProcess(BaseModel):
-    status: str
+    status: Literal["APPROVED", "COMPLETED", "REJECTED"]
     admin_notes: Optional[str] = None
     proof_url: Optional[str] = None
 
 class WithdrawalResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     tenant_id: int
     amount: float
@@ -22,9 +23,6 @@ class WithdrawalResponse(BaseModel):
     requested_at: datetime
     processed_at: Optional[datetime] = None
     tenant_name: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 class AdminStatsResponse(BaseModel):
     total_users: int
