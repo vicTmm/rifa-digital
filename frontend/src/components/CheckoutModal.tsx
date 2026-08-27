@@ -163,6 +163,14 @@ export default function CheckoutModal({
         customer_email: email ? email : null,
       });
 
+      if (response.data?.id && response.data?.access_token) {
+        const storedOrders = JSON.parse(localStorage.getItem("rifa_order_access") || "[]");
+        const nextOrders = [
+          { id: response.data.id, token: response.data.access_token },
+          ...storedOrders.filter((item: any) => item.id !== response.data.id),
+        ].slice(0, 20);
+        localStorage.setItem("rifa_order_access", JSON.stringify(nextOrders));
+      }
       setOrderData(response.data);
       setStep("PIX");
     } catch (err: any) {
@@ -186,7 +194,11 @@ export default function CheckoutModal({
     if (!orderData?.id) return;
     setSimulating(true);
     try {
-      const res = await api.post(`/orders/${orderData.id}/simulate-payment`);
+      const res = await api.post(`/orders/${orderData.id}/simulate-payment`, null, {
+        headers: orderData.access_token
+          ? { "X-Order-Token": orderData.access_token }
+          : undefined,
+      });
       setOrderData((prev: any) => ({
         ...prev,
         status: "PAID",

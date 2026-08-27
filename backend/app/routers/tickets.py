@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from typing import List, Dict, Any
+from typing import List, Optional
 from backend.app.database import get_db
 from backend.app.models.raffle import Raffle
 from backend.app.models.order import Order, OrderStatus
 from backend.app.models.ticket import Ticket, TicketStatus
 from backend.app.schemas.ticket import CustomerRaffleTickets, TicketPublic
 from backend.app.services.raffle_service import RaffleService
+from backend.app.routers.orders import validate_order_access
 
 router = APIRouter(prefix="/tickets", tags=["Bilhetes e Consulta"])
 
@@ -40,29 +40,19 @@ def get_raffle_number_grid(raffle_id: int, db: Session = Depends(get_db)):
     }
 
 @router.get("/my-tickets", response_model=List[CustomerRaffleTickets])
-def search_my_tickets(query: str = Query(..., min_length=8, description="Telefone completo ou CPF do comprador"), db: Session = Depends(get_db)):
-    """Finds all purchased tickets by customer phone or CPF"""
-    clean_query = query.replace(".", "").replace("-", "").replace("(", "").replace(")", "").replace(" ", "")
-    if len(clean_query) not in {10, 11}:
-        raise HTTPException(status_code=400, detail="Informe um telefone completo com DDD ou CPF.")
+def search_my_tickets(
+    order_id: int = Query(..., gt=0, description="Identificador do pedido"),
+    order_token: Optional[str] = Header(None, alias="X-Order-Token"),
+    db: Session = Depends(get_db),
+):
+    """Return one order only after verifying its unguessable access token."""
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Pedido não encontrado.")
+    validate_order_access(order, order_token)
 
-    normalized_phone = func.replace(func.replace(func.replace(func.replace(func.replace(
-        Order.customer_phone, ".", ""), "-", ""), "(", ""), ")", ""), " ", "")
-    normalized_cpf = func.replace(func.replace(func.replace(
-        Order.customer_cpf, ".", ""), "-", ""), " ", "")
-    
-    orders = (
-        db.query(Order)
-        .filter(
-            (normalized_phone == clean_query) |
-            (normalized_cpf == clean_query)
-        )
-        .order_by(Order.created_at.desc())
-        .all()
-    )
-    
     results = []
-    for o in orders:
+    for o in [order]:
         if not o.raffle:
             continue
         tickets = db.query(Ticket).filter(Ticket.order_id == o.id).all()

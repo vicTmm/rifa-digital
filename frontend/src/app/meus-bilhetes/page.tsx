@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
-import { maskPhone, maskCpf, maskCpfOrCnpj } from "@/lib/masks";
 import { useToast } from "@/context/ToastContext";
 import {
   Ticket,
@@ -23,31 +22,29 @@ import {
 
 export default function MyTicketsPage() {
   const toast = useToast();
-  const [query, setQuery] = useState("");
+  const [orderId, setOrderId] = useState("");
+  const [orderToken, setOrderToken] = useState("");
   const [results, setResults] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [ticketSearchFilter, setTicketSearchFilter] = useState("");
 
-  const handleQueryChange = (val: string) => {
-    // If user starts typing digits, format smartly
-    const rawDigits = val.replace(/\D/g, "");
-    if (rawDigits.length > 0) {
-      if (rawDigits.length <= 11) {
-        setQuery(maskPhone(val));
-      } else {
-        setQuery(maskCpf(val));
+  useEffect(() => {
+    try {
+      const storedOrders = JSON.parse(localStorage.getItem("rifa_order_access") || "[]");
+      if (storedOrders[0]?.id && storedOrders[0]?.token) {
+        setOrderId(String(storedOrders[0].id));
+        setOrderToken(storedOrders[0].token);
       }
-    } else {
-      setQuery(val);
+    } catch {
+      localStorage.removeItem("rifa_order_access");
     }
-  };
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanQuery = query.replace(/\D/g, "") || query.trim();
-    if (!cleanQuery) {
-      setErrorMsg("Informe seu número de WhatsApp ou CPF.");
+    if (!orderId || !orderToken.trim()) {
+      setErrorMsg("Informe o número do pedido e a chave de acesso.");
       return;
     }
 
@@ -57,7 +54,8 @@ export default function MyTicketsPage() {
 
     try {
       const res = await api.get("/tickets/my-tickets", {
-        params: { query: cleanQuery },
+        params: { order_id: Number(orderId) },
+        headers: { "X-Order-Token": orderToken.trim() },
       });
       setResults(res.data);
       if (res.data.length > 0) {
@@ -65,7 +63,7 @@ export default function MyTicketsPage() {
       }
     } catch (err: any) {
       console.error("Search error:", err);
-      setErrorMsg("Erro ao consultar bilhetes. Verifique o número informado.");
+      setErrorMsg("Pedido não encontrado ou chave de acesso inválida.");
     } finally {
       setLoading(false);
     }
@@ -93,7 +91,7 @@ export default function MyTicketsPage() {
           Consultar Meus Bilhetes
         </h1>
         <p className="text-xs sm:text-sm text-zinc-300">
-          Digite seu número de WhatsApp ou CPF para localizar suas compras e números da sorte em tempo real.
+          Use o número do pedido e a chave privada recebida no checkout. Seus dados pessoais não são usados como senha.
         </p>
       </div>
 
@@ -103,12 +101,24 @@ export default function MyTicketsPage() {
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
             <input
-              type="text"
+              type="number"
               required
-              placeholder="Digite seu WhatsApp (ex: 11 98765-4321) ou CPF"
-              value={query}
-              onChange={(e) => handleQueryChange(e.target.value)}
+              min="1"
+              placeholder="Número do pedido"
+              value={orderId}
+              onChange={(e) => setOrderId(e.target.value)}
               className="w-full rounded-2xl bg-zinc-950 border border-zinc-700 pl-12 pr-4 py-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
+            />
+          </div>
+          <div className="relative">
+            <input
+              type="password"
+              required
+              autoComplete="off"
+              placeholder="Chave privada de acesso"
+              value={orderToken}
+              onChange={(e) => setOrderToken(e.target.value)}
+              className="w-full rounded-2xl bg-zinc-950 border border-zinc-700 px-4 py-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-mono"
             />
           </div>
 
@@ -157,9 +167,9 @@ export default function MyTicketsPage() {
 
           {results.length === 0 ? (
             <div className="rounded-3xl bg-zinc-900/50 border border-zinc-800 p-10 text-center space-y-3">
-              <p className="text-base font-bold text-white">Nenhum bilhete encontrado para este telefone ou CPF.</p>
+              <p className="text-base font-bold text-white">Nenhum bilhete encontrado para este pedido.</p>
               <p className="text-xs text-zinc-400 max-w-md mx-auto">
-                Certifique-se de que o pagamento via PIX foi realizado com os mesmos dados informados no checkout.
+                Confirme o número do pedido e use exatamente a chave privada fornecida no checkout.
               </p>
             </div>
           ) : (

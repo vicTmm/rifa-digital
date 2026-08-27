@@ -10,20 +10,21 @@ class OrderStub:
 
 
 def test_order_access_token_accepts_matching_secret():
-    previous = settings.REQUIRE_ORDER_ACCESS_TOKEN
-    settings.REQUIRE_ORDER_ACCESS_TOKEN = True
-    try:
-        validate_order_access(OrderStub(), "private-token")
-    finally:
-        settings.REQUIRE_ORDER_ACCESS_TOKEN = previous
+    validate_order_access(OrderStub(), "private-token")
 
 
 def test_order_access_token_hides_order_for_invalid_secret():
+    with pytest.raises(HTTPException) as exc:
+        validate_order_access(OrderStub(), "wrong-token")
+    assert exc.value.status_code == 404
+
+
+def test_order_access_token_is_required_even_in_development():
     previous = settings.REQUIRE_ORDER_ACCESS_TOKEN
-    settings.REQUIRE_ORDER_ACCESS_TOKEN = True
+    settings.REQUIRE_ORDER_ACCESS_TOKEN = False
     try:
         with pytest.raises(HTTPException) as exc:
-            validate_order_access(OrderStub(), "wrong-token")
+            validate_order_access(OrderStub(), None)
         assert exc.value.status_code == 404
     finally:
         settings.REQUIRE_ORDER_ACCESS_TOKEN = previous

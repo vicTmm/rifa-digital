@@ -25,8 +25,6 @@ def hash_order_access_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 def validate_order_access(order: Order, token: Optional[str]) -> None:
-    if not settings.REQUIRE_ORDER_ACCESS_TOKEN:
-        return
     if not token or not order.access_token_hash:
         raise HTTPException(status_code=404, detail="Pedido não encontrado.")
     if not hmac.compare_digest(order.access_token_hash, hash_order_access_token(token)):
@@ -188,6 +186,7 @@ def get_order_status(
 async def simulate_order_payment(
     order_id: int,
     background_tasks: BackgroundTasks,
+    order_token: Optional[str] = Header(None, alias="X-Order-Token"),
     db: Session = Depends(get_db)
 ):
     """Simulates instant PIX payment for testing/demonstration"""
@@ -196,6 +195,7 @@ async def simulate_order_payment(
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Pedido não encontrado.")
+    validate_order_access(order, order_token)
         
     if order.status == OrderStatus.PAID.value:
         tickets = db.query(Ticket).filter(Ticket.order_id == order.id).all()

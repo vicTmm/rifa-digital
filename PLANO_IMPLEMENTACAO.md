@@ -76,11 +76,11 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
   - [x] Aplicar todas as migrações.
   - [x] Validar tabelas, revision head e ausência de drift no schema.
 
-- [ ] **F1.5 — Validar migrações em PostgreSQL.**
+- [x] **F1.5 — Validar migrações em PostgreSQL.**
   - [x] Adicionar o driver PostgreSQL às dependências de execução.
   - [x] Configurar PostgreSQL 17 limpo no job de CI.
   - [x] Configurar `upgrade head`, `alembic check` e testes contra PostgreSQL no CI.
-  - [ ] Confirmar a execução no CI após o envio das alterações; não há PostgreSQL ou Docker disponível na estação local.
+  - [x] Confirmar a execução no CI: workflow `33115059869` aprovado em PostgreSQL 17.
 
 - [x] **F1.6 — Organizar dependências Python.**
   - [x] Separar dependências de execução das dependências de desenvolvimento/teste.
@@ -114,7 +114,7 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
 - [x] Um banco vazio chega ao revision head sem erro.
 - [x] Os testes atuais do backend continuam passando.
 - [x] `npm ci` e `npm run build` passam em ambiente limpo.
-- [ ] O pipeline completo passa no CI.
+- [x] O pipeline completo passa no CI.
 
 ---
 
@@ -128,13 +128,14 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
 
 ### Tarefas
 
-- [ ] **F2.1 — Proteger a consulta “Meus bilhetes”.**
-  - Substituir consulta direta por telefone/CPF por autenticação, OTP ou link/token verificável.
-  - Não revelar se um CPF ou telefone existe antes da validação.
+- [x] **F2.1 — Proteger a consulta “Meus bilhetes”.**
+  - [x] Substituir a consulta direta por telefone/CPF por pedido e token criptograficamente aleatório.
+  - [x] Não revelar se um CPF ou telefone existe antes da validação.
+  - [x] Armazenar localmente as referências dos pedidos recentes para preservar a experiência no mesmo navegador.
 
-- [ ] **F2.2 — Proteger consultas públicas de pedidos.**
-  - Exigir token de acesso específico do pedido.
-  - Ativar `REQUIRE_ORDER_ACCESS_TOKEN` em homologação e produção.
+- [x] **F2.2 — Proteger consultas públicas de pedidos.**
+  - [x] Exigir token de acesso específico do pedido em todos os ambientes.
+  - [x] Proteger também a simulação de pagamento disponível em desenvolvimento.
 
 - [ ] **F2.3 — Implementar rate limiting.**
   - Aplicar limites a login, cadastro, pedidos, simulação e consultas públicas.
