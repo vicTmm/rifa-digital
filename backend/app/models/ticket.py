@@ -7,6 +7,7 @@ from backend.app.database import Base
 class TicketStatus(str, enum.Enum):
     RESERVED = "RESERVED"
     PAID = "PAID"
+    REFUNDED = "REFUNDED"
 
 class Ticket(Base):
     __tablename__ = "tickets"

@@ -9,6 +9,7 @@ class OrderStatus(str, enum.Enum):
     PAID = "PAID"
     EXPIRED = "EXPIRED"
     CANCELLED = "CANCELLED"
+    REFUND_PENDING = "REFUND_PENDING"
     REFUNDED = "REFUNDED"
 
 class Order(Base):
@@ -47,6 +48,10 @@ class Order(Base):
     
     expires_at = Column(DateTime, nullable=False)
     paid_at = Column(DateTime, nullable=True)
+    refunded_at = Column(DateTime, nullable=True)
+    refund_reason = Column(Text, nullable=True)
+    provider_refund_id = Column(String, nullable=True, index=True)
+    refund_error = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

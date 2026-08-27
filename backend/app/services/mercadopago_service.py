@@ -32,6 +32,32 @@ class MercadoPagoService:
             return None
         return response.json()
 
+    @classmethod
+    async def refund_payment(
+        cls,
+        payment_id: str,
+        access_token: str,
+        idempotency_key: str,
+    ) -> Optional[Dict[str, Any]]:
+        if payment_id.startswith("mock_pay_") and settings.ENABLE_PAYMENT_SIMULATOR:
+            return {"id": f"mock_refund_{payment_id}", "status": "approved"}
+        if not cls.is_real_token(access_token):
+            return None
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+            "X-Idempotency-Key": idempotency_key,
+        }
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.post(
+                f"https://api.mercadopago.com/v1/payments/{payment_id}/refunds",
+                json={},
+                headers=headers,
+            )
+        if response.status_code not in {200, 201}:
+            return None
+        return response.json()
+
     @staticmethod
     def validate_webhook_signature(
         signature: Optional[str],

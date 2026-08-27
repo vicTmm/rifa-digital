@@ -44,3 +44,6 @@ class OrderStatusResponse(BaseModel):
 
 class SimulatePaymentRequest(BaseModel):
     order_id: int
+
+class RefundRequest(BaseModel):
+    reason: str = Field(min_length=5, max_length=500)

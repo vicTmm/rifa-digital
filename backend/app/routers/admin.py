@@ -14,8 +14,37 @@ from backend.app.services.auth import get_current_admin
 from backend.app.services.financial import FinancialService, money
 from backend.app.models.payment import PaymentEvent
 from backend.app.services.payment_reconciliation import PaymentReconciliationService
+from backend.app.schemas.order import RefundRequest
+from backend.app.services.refunds import RefundService
 
 router = APIRouter(prefix="/admin", tags=["Super Administrador"])
+
+@router.post("/orders/{order_id}/cancel")
+def cancel_pending_order(
+    order_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    order = db.query(Order).filter(Order.id == order_id).with_for_update().first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Pedido não encontrado.")
+    RefundService.cancel_pending(db, order)
+    return {"id": order.id, "status": order.status}
+
+@router.post("/orders/{order_id}/refund")
+async def refund_order(
+    order_id: int,
+    payload: RefundRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    order = await RefundService.refund_paid(db, order_id, payload.reason)
+    return {
+        "id": order.id,
+        "status": order.status,
+        "refunded_at": order.refunded_at,
+        "provider_refund_id": order.provider_refund_id,
+    }
 
 @router.get("/payment-events")
 def list_payment_events(
