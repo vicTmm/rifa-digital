@@ -152,3 +152,17 @@ rifa-digital/
 ├── start-frontend.bat        # Script Windows Batch para iniciar o Frontend
 └── README.md                 # Documentação completa
 ```
+
+## Verificações de qualidade
+
+```powershell
+# Backend
+backend\venv\Scripts\python.exe -m alembic upgrade head
+backend\venv\Scripts\python.exe -m pytest backend/tests -q
+
+# Frontend
+cd frontend
+npm.cmd run build
+```
+
+O workflow de CI executa essas verificações automaticamente em pushes para `main` e em pull requests.
