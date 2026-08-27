@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import random
@@ -19,6 +19,7 @@ from backend.app.schemas.raffle import (
 )
 from backend.app.services.auth import get_current_organizer
 from backend.app.services.raffle_service import RaffleService
+from backend.app.services.whatsapp_service import WhatsAppService
 
 router = APIRouter(prefix="/raffles", tags=["Campanhas de Rifas"])
 
@@ -263,6 +264,7 @@ def update_raffle(
 def execute_draw(
     raffle_id: int,
     payload: RaffleDrawExecute,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_organizer),
     db: Session = Depends(get_db)
 ):
@@ -304,6 +306,17 @@ def execute_draw(
     raffle.draw_notes = payload.draw_notes
     
     db.commit()
+
+    # Dispatch WhatsApp winner notification
+    if winning_ticket.customer_phone:
+        background_tasks.add_task(
+            WhatsAppService.notify_draw_winner,
+            winner_phone=winning_ticket.customer_phone,
+            winner_name=winning_ticket.customer_name,
+            raffle_title=raffle.title,
+            winning_number=raffle.winner_number
+        )
+
     return {
         "message": "Sorteio realizado com sucesso!",
         "winner_number": raffle.winner_number,

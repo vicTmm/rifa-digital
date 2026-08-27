@@ -5,10 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
-import { Ticket, Lock, Mail, User, Phone, Sparkles, AlertCircle, Loader2, ArrowRight } from "lucide-react";
+import { maskPhone } from "@/lib/masks";
+import { useToast } from "@/context/ToastContext";
+import { Ticket, Lock, Mail, User, Phone, AlertCircle, Loader2, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const toast = useToast();
   const { login } = useAuth();
 
   const [fullName, setFullName] = useState("");
@@ -35,6 +38,7 @@ export default function RegisterPage() {
       });
 
       login(res.data.access_token, res.data.user);
+      toast.success(`Conta criada com sucesso, ${res.data.user.full_name}!`, "Bem-vindo(a)!");
 
       if (res.data.user.role === "ORGANIZER") {
         router.push("/dashboard");
@@ -53,8 +57,8 @@ export default function RegisterPage() {
     <div className="container mx-auto max-w-md px-4 py-12 sm:py-20 space-y-6">
       {/* Brand Header */}
       <div className="text-center space-y-2">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-zinc-950 font-black shadow-lg shadow-emerald-500/20">
-          <Ticket className="w-6 h-6" />
+        <div className="inline-flex h-14 w-14 items-center justify-center rounded-3xl bg-emerald-500 text-zinc-950 font-black shadow-lg shadow-emerald-500/20">
+          <Ticket className="w-7 h-7" />
         </div>
         <h1 className="text-2xl font-black text-white">Criar Nova Conta</h1>
         <p className="text-xs text-zinc-400">
@@ -73,69 +77,69 @@ export default function RegisterPage() {
           )}
 
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-zinc-300">
-              Nome Completo ou Nome da Sua Loja / Marca *
+            <label className="block text-xs font-bold text-zinc-200">
+              Nome Completo ou Nome da Sua Loja *
             </label>
             <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
               <input
                 type="text"
                 required
                 placeholder="Ex: Prêmios do Silva"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-xl bg-zinc-950 border border-zinc-800 pl-10 pr-3 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                className="w-full rounded-xl bg-zinc-950 border border-zinc-800 pl-10 pr-3 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-zinc-300">
+            <label className="block text-xs font-bold text-zinc-200">
               E-mail *
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
               <input
                 type="email"
                 required
                 placeholder="seuemail@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl bg-zinc-950 border border-zinc-800 pl-10 pr-3 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                className="w-full rounded-xl bg-zinc-950 border border-zinc-800 pl-10 pr-3 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-zinc-300">
+            <label className="block text-xs font-bold text-zinc-200">
               WhatsApp com DDD *
             </label>
             <div className="relative">
-              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
               <input
                 type="tel"
                 required
                 placeholder="(11) 98765-4321"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-xl bg-zinc-950 border border-zinc-800 pl-10 pr-3 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                onChange={(e) => setPhone(maskPhone(e.target.value))}
+                className="w-full rounded-xl bg-zinc-950 border border-zinc-800 pl-10 pr-3 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 font-medium"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-zinc-300">
+            <label className="block text-xs font-bold text-zinc-200">
               Senha de Acesso *
             </label>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
               <input
                 type="password"
                 required
                 placeholder="Mínimo 6 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl bg-zinc-950 border border-zinc-800 pl-10 pr-3 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                className="w-full rounded-xl bg-zinc-950 border border-zinc-800 pl-10 pr-3 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
@@ -143,7 +147,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-3.5 text-sm font-black text-zinc-950 shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 disabled:opacity-50 transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-3.5 text-sm font-black text-zinc-950 shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 disabled:opacity-50 transition-all cursor-pointer hover:scale-[1.01]"
           >
             {loading ? (
               <>

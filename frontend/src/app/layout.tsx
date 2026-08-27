@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { ToastProvider } from "@/context/ToastContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -21,11 +22,13 @@ export default function RootLayout({
     <html lang="pt-BR" className="dark">
       <body className={`${inter.className} min-h-screen flex flex-col bg-zinc-950 text-zinc-100 antialiased`}>
         <AuthProvider>
-          <Navbar />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
+          <ToastProvider>
+            <Navbar />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

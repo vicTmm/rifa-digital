@@ -10,7 +10,7 @@ from backend.app.config import settings
 from backend.app.seed import seed_database
 from backend.app.database import SessionLocal
 from backend.app.services.raffle_service import RaffleService
-from backend.app.routers import auth, tenants, raffles, orders, tickets, admin
+from backend.app.routers import auth, tenants, raffles, orders, tickets, admin, uploads
 
 def cleanup_expired_orders() -> None:
     db = SessionLocal()
@@ -71,6 +71,7 @@ app.include_router(raffles.router, prefix=settings.API_V1_STR)
 app.include_router(orders.router, prefix=settings.API_V1_STR)
 app.include_router(tickets.router, prefix=settings.API_V1_STR)
 app.include_router(admin.router, prefix=settings.API_V1_STR)
+app.include_router(uploads.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

@@ -4,6 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import RaffleCard from "@/components/RaffleCard";
+import { formatNumber } from "@/lib/masks";
 import {
   CheckCircle2,
   MessageCircle,
@@ -11,7 +12,9 @@ import {
   Sparkles,
   Ticket,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  Trophy,
+  Share2
 } from "lucide-react";
 
 export default function OrganizerStorefrontPage({
@@ -97,15 +100,17 @@ export default function OrganizerStorefrontPage({
                 )}
               </div>
 
-              <div className="space-y-1 pt-2">
+              <div className="space-y-1.5 pt-2">
                 <div className="flex items-center justify-center sm:justify-start gap-2">
                   <h1 className="text-2xl sm:text-3xl font-black text-white">{tenant.name}</h1>
                   {tenant.is_verified && (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <span className="inline-flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full text-xs font-bold text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Verificado Oficial
+                    </span>
                   )}
                 </div>
-                <p className="text-xs text-zinc-400 max-w-lg">
-                  {tenant.bio || "Campanhas e sorteios digitais com total segurança e auditoria."}
+                <p className="text-xs text-zinc-300 max-w-lg">
+                  {tenant.bio || "Campanhas e sorteios digitais com total segurança e auditoria pela Loteria Federal."}
                 </p>
               </div>
             </div>
@@ -119,7 +124,7 @@ export default function OrganizerStorefrontPage({
                   rel="noreferrer"
                   className="flex items-center gap-1.5 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-bold text-zinc-950 shadow-md shadow-emerald-500/20 hover:bg-emerald-400 transition-all cursor-pointer"
                 >
-                  <MessageCircle className="w-4 h-4" /> WhatsApp
+                  <MessageCircle className="w-4 h-4" /> Suporte WhatsApp
                 </a>
               )}
               {tenant.instagram && (
@@ -137,17 +142,52 @@ export default function OrganizerStorefrontPage({
         </div>
       </div>
 
+      {/* Trust Highlights for Organizer */}
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-4 flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+              <Ticket className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-zinc-400 font-medium">Campanhas</p>
+              <p className="text-sm font-black text-white">{raffles.length} Rifas</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-4 flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-zinc-400 font-medium">Auditoria</p>
+              <p className="text-sm font-black text-white">Loteria Federal</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-4 flex items-center gap-3 col-span-2 sm:col-span-1">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-zinc-400 font-medium">Entrega</p>
+              <p className="text-sm font-black text-white">100% Garantida</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Organizer's Raffles */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6 space-y-6">
         <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
           <div className="flex items-center gap-2">
             <Ticket className="w-5 h-5 text-emerald-400" />
             <h2 className="text-lg sm:text-xl font-bold text-white">
-              Campanhas de {tenant.name}
+              Campanhas Ativas de {tenant.name}
             </h2>
           </div>
-          <span className="text-xs font-semibold text-zinc-400">
-            {raffles.length} {raffles.length === 1 ? "rifa encontrada" : "rifas encontradas"}
+          <span className="text-xs font-bold text-zinc-400">
+            {raffles.length} {raffles.length === 1 ? "campanha encontrada" : "campanhas encontradas"}
           </span>
         </div>
 

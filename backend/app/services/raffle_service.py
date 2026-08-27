@@ -83,6 +83,12 @@ class RaffleService:
         """
         cls.cleanup_expired_orders(db, raffle.id)
         
+        # Lock raffle row to serialize concurrent reservations and avoid race conditions
+        try:
+            db.query(Raffle).filter(Raffle.id == raffle.id).with_for_update().first()
+        except Exception:
+            pass  # SQLite does not support SELECT FOR UPDATE; uses file-level transaction locking
+
         # Fetch all currently reserved or paid number integers for this raffle
         taken_numbers_query = db.query(Ticket.number_int).filter(Ticket.raffle_id == raffle.id).all()
         taken_numbers = {row[0] for row in taken_numbers_query}

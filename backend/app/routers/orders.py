@@ -184,7 +184,11 @@ def get_order_status(
     }
 
 @router.post("/{order_id}/simulate-payment", response_model=OrderStatusResponse)
-def simulate_order_payment(order_id: int, db: Session = Depends(get_db)):
+async def simulate_order_payment(
+    order_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     """Simulates instant PIX payment for testing/demonstration"""
     if settings.is_production or not settings.ENABLE_PAYMENT_SIMULATOR:
         raise HTTPException(status_code=404, detail="Recurso não disponível.")
@@ -207,16 +211,42 @@ def simulate_order_payment(order_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Erro ao processar pagamento.")
         
     tickets = db.query(Ticket).filter(Ticket.order_id == order.id).all()
+    ticket_numbers = [t.number_str for t in tickets]
+
+    # Dispatch WhatsApp Confirmation via Background Task
+    if order.customer_phone:
+        background_tasks.add_task(
+            WhatsAppService.notify_order_paid,
+            customer_phone=order.customer_phone,
+            customer_name=order.customer_name,
+            raffle_title=order.raffle.title if order.raffle else "Rifa Digital",
+            tickets=ticket_numbers,
+            total_amount=order.total_amount,
+            order_id=order.id
+        )
+        if lucky_prizes_won:
+            background_tasks.add_task(
+                WhatsAppService.notify_lucky_prize,
+                customer_phone=order.customer_phone,
+                customer_name=order.customer_name,
+                raffle_title=order.raffle.title if order.raffle else "Rifa Digital",
+                lucky_prizes=lucky_prizes_won
+            )
+
     return {
         "id": order.id,
         "status": order.status,
         "paid_at": order.paid_at,
-        "tickets": [t.number_str for t in tickets],
+        "tickets": ticket_numbers,
         "lucky_numbers_won": lucky_prizes_won
     }
 
 @router.post("/webhook/mercadopago")
-async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
+async def mercadopago_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     """Mercado Pago IPN / Webhook notification handler"""
     try:
         data = await request.json()
@@ -253,9 +283,33 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
         if abs(float(payment.get("transaction_amount", 0)) - float(order.total_amount)) > 0.001:
             raise HTTPException(status_code=409, detail="Valor do pagamento divergente.")
 
-        success, _ = RaffleService.confirm_payment(db, order)
+        success, lucky_prizes_won = RaffleService.confirm_payment(db, order)
         if not success:
             raise HTTPException(status_code=409, detail="Pedido não pode ser confirmado.")
+
+        tickets = db.query(Ticket).filter(Ticket.order_id == order.id).all()
+        ticket_numbers = [t.number_str for t in tickets]
+
+        # Dispatch WhatsApp Notification
+        if order.customer_phone:
+            background_tasks.add_task(
+                WhatsAppService.notify_order_paid,
+                customer_phone=order.customer_phone,
+                customer_name=order.customer_name,
+                raffle_title=order.raffle.title if order.raffle else "Rifa Digital",
+                tickets=ticket_numbers,
+                total_amount=order.total_amount,
+                order_id=order.id
+            )
+            if lucky_prizes_won:
+                background_tasks.add_task(
+                    WhatsAppService.notify_lucky_prize,
+                    customer_phone=order.customer_phone,
+                    customer_name=order.customer_name,
+                    raffle_title=order.raffle.title if order.raffle else "Rifa Digital",
+                    lucky_prizes=lucky_prizes_won
+                )
+
         return {"status": "ok", "order_id": order.id}
     except HTTPException:
         raise
