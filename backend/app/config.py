@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # Platform settings
     DEFAULT_PLATFORM_FEE_PERCENT: float = 5.0 # 5% default fee
     ORDER_RESERVATION_MINUTES: int = 15 # 15 min to pay PIX
+    EXPIRED_ORDER_CLEANUP_INTERVAL_SECONDS: int = 60
     
     # Mercado Pago
     MERCADO_PAGO_ACCESS_TOKEN: str = "TEST-MERCADOPAGO-ACCESS-TOKEN-MOCK"
