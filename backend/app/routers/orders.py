@@ -17,6 +17,7 @@ from backend.app.services.mercadopago_service import MercadoPagoService
 from backend.app.services.whatsapp_service import WhatsAppService
 from backend.app.config import settings
 from backend.app.services.credentials import CredentialService
+from backend.app.services.payment_events import PaymentEventService
 
 router = APIRouter(prefix="/orders", tags=["Pedidos e Checkout PIX"])
 
@@ -269,8 +270,20 @@ async def mercadopago_webhook(
             if not valid_signature:
                 raise HTTPException(status_code=401, detail="Assinatura inválida.")
 
+        event, created = PaymentEventService.get_or_create(
+            db,
+            payload=data,
+            request_id=request.headers.get("x-request-id"),
+            payment_id=payment_id,
+            event_type=topic,
+        )
+        if not created and event.processing_status == "PROCESSED":
+            return {"status": "ok", "order_id": event.order_id, "duplicate": True}
+
         order = db.query(Order).filter(Order.mp_payment_id == payment_id).first()
         if not order or order.status != OrderStatus.PENDING.value:
+            PaymentEventService.finish(event, "IGNORED", order.id if order else None)
+            db.commit()
             return {"status": "ignored"}
 
         tenant = db.query(Tenant).filter(Tenant.id == order.raffle.tenant_id).first()
@@ -279,6 +292,8 @@ async def mercadopago_webhook(
         if not payment:
             raise HTTPException(status_code=502, detail="Não foi possível validar o pagamento.")
         if payment.get("status") != "approved":
+            PaymentEventService.finish(event, "PENDING", order.id)
+            db.commit()
             return {"status": "pending"}
         if abs(float(payment.get("transaction_amount", 0)) - float(order.total_amount)) > 0.001:
             raise HTTPException(status_code=409, detail="Valor do pagamento divergente.")
@@ -286,6 +301,9 @@ async def mercadopago_webhook(
         success, lucky_prizes_won = RaffleService.confirm_payment(db, order)
         if not success:
             raise HTTPException(status_code=409, detail="Pedido não pode ser confirmado.")
+
+        PaymentEventService.finish(event, "PROCESSED", order.id)
+        db.commit()
 
         tickets = db.query(Ticket).filter(Ticket.order_id == order.id).all()
         ticket_numbers = [t.number_str for t in tickets]

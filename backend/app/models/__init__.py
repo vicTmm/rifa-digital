@@ -4,6 +4,7 @@ from backend.app.models.raffle import Raffle, RaffleStatus, DrawType
 from backend.app.models.order import Order, OrderStatus
 from backend.app.models.ticket import Ticket, TicketStatus
 from backend.app.models.financial import WithdrawalRequest, WithdrawalStatus, FinancialLedgerEntry, LedgerEntryType
+from backend.app.models.payment import PaymentEvent
 
 __all__ = [
     "User", "UserRole",
@@ -11,5 +12,6 @@ __all__ = [
     "Raffle", "RaffleStatus", "DrawType",
     "Order", "OrderStatus",
     "Ticket", "TicketStatus",
-    "WithdrawalRequest", "WithdrawalStatus", "FinancialLedgerEntry", "LedgerEntryType"
+    "WithdrawalRequest", "WithdrawalStatus", "FinancialLedgerEntry", "LedgerEntryType",
+    "PaymentEvent"
 ]

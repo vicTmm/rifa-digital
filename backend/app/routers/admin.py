@@ -12,8 +12,35 @@ from backend.app.models.financial import WithdrawalRequest, WithdrawalStatus, Le
 from backend.app.schemas.financial import AdminStatsResponse, WithdrawalResponse, WithdrawalProcess
 from backend.app.services.auth import get_current_admin
 from backend.app.services.financial import FinancialService, money
+from backend.app.models.payment import PaymentEvent
 
 router = APIRouter(prefix="/admin", tags=["Super Administrador"])
+
+@router.get("/payment-events")
+def list_payment_events(
+    processing_status: Optional[str] = None,
+    limit: int = 100,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    query = db.query(PaymentEvent)
+    if processing_status:
+        query = query.filter(PaymentEvent.processing_status == processing_status.upper())
+    events = query.order_by(PaymentEvent.received_at.desc()).limit(min(max(limit, 1), 500)).all()
+    return [
+        {
+            "id": event.id,
+            "event_key": event.event_key,
+            "payment_id": event.provider_payment_id,
+            "event_type": event.event_type,
+            "status": event.processing_status,
+            "order_id": event.order_id,
+            "error": event.error_message,
+            "received_at": event.received_at,
+            "processed_at": event.processed_at,
+        }
+        for event in events
+    ]
 
 @router.get("/stats", response_model=AdminStatsResponse)
 def get_admin_stats(current_admin: User = Depends(get_current_admin), db: Session = Depends(get_db)):
