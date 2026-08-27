@@ -143,15 +143,15 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
   - [x] Exigir armazenamento compartilhado em produção e permitir memória apenas no desenvolvimento.
   - [x] Adicionar teste automatizado do bloqueio de tentativas de login.
 
-- [ ] **F2.4 — Isolar recursos exclusivos de desenvolvimento.**
+- [x] **F2.4 — Isolar recursos exclusivos de desenvolvimento.**
   - Impedir que o simulador de pagamento seja habilitado em produção.
   - Ocultar endpoints de simulação fora do ambiente autorizado.
 
-- [ ] **F2.5 — Revisar CORS e hosts permitidos.**
+- [x] **F2.5 — Revisar CORS e hosts permitidos.**
   - Configurar origens por ambiente.
   - Evitar origens locais em produção.
 
-- [ ] **F2.6 — Adicionar headers de segurança.**
+- [x] **F2.6 — Adicionar headers de segurança.**
   - Definir HSTS, proteção de conteúdo, política de referrer e demais headers aplicáveis.
 
 - [ ] **F2.7 — Sanitizar logs e erros.**

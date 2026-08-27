@@ -186,7 +186,11 @@ def get_order_status(
         "lucky_numbers_won": lucky_won
     }
 
-@router.post("/{order_id}/simulate-payment", response_model=OrderStatusResponse)
+@router.post(
+    "/{order_id}/simulate-payment",
+    response_model=OrderStatusResponse,
+    include_in_schema=settings.payment_simulator_enabled,
+)
 @limiter.limit(settings.PAYMENT_SIMULATOR_RATE_LIMIT)
 async def simulate_order_payment(
     request: Request,
@@ -196,7 +200,7 @@ async def simulate_order_payment(
     db: Session = Depends(get_db)
 ):
     """Simulates instant PIX payment for testing/demonstration"""
-    if settings.is_production or not settings.ENABLE_PAYMENT_SIMULATOR:
+    if not settings.payment_simulator_enabled:
         raise HTTPException(status_code=404, detail="Recurso não disponível.")
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:

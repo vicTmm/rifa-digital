@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     ORDER_CREATE_RATE_LIMIT: str = "20/minute"
     ORDER_LOOKUP_RATE_LIMIT: str = "30/minute"
     PAYMENT_SIMULATOR_RATE_LIMIT: str = "10/minute"
+    # O simulador só pode existir nos ambientes explicitamente autorizados.
+    PAYMENT_SIMULATOR_ENVIRONMENTS: List[str] = ["development", "test", "sandbox"]
     
     # Mercado Pago
     MERCADO_PAGO_ACCESS_TOKEN: str = "TEST-MERCADOPAGO-ACCESS-TOKEN-MOCK"
@@ -52,10 +54,17 @@ class Settings(BaseSettings):
         "http://localhost:8000",
         "http://127.0.0.1:8000"
     ]
+    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1", "testserver"]
 
     @property
     def is_production(self) -> bool:
         return self.ENVIRONMENT.lower() == "production"
+
+    @property
+    def payment_simulator_enabled(self) -> bool:
+        return self.ENABLE_PAYMENT_SIMULATOR and self.ENVIRONMENT.lower() in {
+            environment.lower().strip() for environment in self.PAYMENT_SIMULATOR_ENVIRONMENTS
+        }
 
     @model_validator(mode="after")
     def validate_production_security(self):
@@ -68,6 +77,18 @@ class Settings(BaseSettings):
                 raise ValueError("CREDENTIAL_ENCRYPTION_KEY deve ser configurada em produção")
             if self.RATE_LIMIT_STORAGE_URI == "memory://":
                 raise ValueError("RATE_LIMIT_STORAGE_URI deve usar armazenamento compartilhado em produção")
+            if any(
+                origin.strip().lower().startswith(("http://localhost", "http://127.0.0.1"))
+                for origin in self.CORS_ORIGINS
+            ) or "*" in self.CORS_ORIGINS:
+                raise ValueError("CORS_ORIGINS não pode conter origens locais ou curinga em produção")
+            if not self.CORS_ORIGINS:
+                raise ValueError("CORS_ORIGINS deve ser configurado em produção")
+            if not self.ALLOWED_HOSTS or "*" in self.ALLOWED_HOSTS or any(
+                host.strip().lower() in {"localhost", "127.0.0.1", "testserver"}
+                for host in self.ALLOWED_HOSTS
+            ):
+                raise ValueError("ALLOWED_HOSTS deve conter apenas hosts explícitos em produção")
             self.ENABLE_PAYMENT_SIMULATOR = False
             self.REQUIRE_ORDER_ACCESS_TOKEN = True
         return self

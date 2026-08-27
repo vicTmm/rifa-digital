@@ -119,7 +119,7 @@ class MercadoPagoService:
         # Check if real Mercado Pago token is set (usually starts with APP_USR-)
         is_real_token = cls.is_real_token(access_token)
         
-        if is_real_token and not settings.ENABLE_PAYMENT_SIMULATOR:
+        if is_real_token and not settings.payment_simulator_enabled:
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json",
@@ -168,11 +168,14 @@ class MercadoPagoService:
                             "pix_qr_code": qr_img,
                             "txid": data.get("id")
                         }
-            except Exception as e:
-                # Log and fallback to mock simulator for seamless development
-                print(f"[MercadoPago] Error calling API: {e}, falling back to simulated PIX")
-        
+            except Exception:
+                # Nunca mascarar uma falha real com um pagamento simulado.
+                if not settings.payment_simulator_enabled:
+                    raise
+
         # Simulated PIX for Development / Sandbox
+        if not settings.payment_simulator_enabled:
+            raise RuntimeError("Pagamento simulado desabilitado fora de ambiente autorizado")
         txid = f"SIM_{uuid.uuid4().hex[:12].upper()}"
         mock_copia_e_cola = (
             f"00020126580014br.gov.bcb.pix0136{uuid.uuid4()}"
