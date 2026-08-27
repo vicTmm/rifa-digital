@@ -4,12 +4,8 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from backend.app.config import settings
-from backend.app.database import engine, Base
 from backend.app.seed import seed_database
 from backend.app.routers import auth, tenants, raffles, orders, tickets, admin
-
-# Create tables
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

@@ -4,6 +4,11 @@ Write-Host "==============================================" -ForegroundColor Gre
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+& "$Root\backend\venv\Scripts\python.exe" -m alembic upgrade head
+if ($LASTEXITCODE -ne 0) {
+    throw "Falha ao aplicar as migrations do banco de dados."
+}
+
 # Start Backend in background or new process
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$Root'; .\backend\venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload"
 

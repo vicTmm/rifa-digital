@@ -87,6 +87,7 @@ cd C:\Projetos\rifa-digital
 backend\venv\Scripts\activate
 
 # Iniciar o servidor FastAPI
+python -m alembic upgrade head
 python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 - A API estará disponível em: **`http://localhost:8000`**
