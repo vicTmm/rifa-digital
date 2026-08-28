@@ -198,11 +198,11 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
 
 ### Tarefas
 
-- [ ] **F3.1 — Adicionar PostgreSQL ao desenvolvimento e CI.**
+- [x] **F3.1 — Adicionar PostgreSQL ao desenvolvimento e CI.**
   - Manter SQLite apenas para testes unitários compatíveis, se útil.
   - Executar testes de integração financeira em PostgreSQL.
 
-- [ ] **F3.2 — Padronizar valores monetários com `Decimal`.**
+- [x] **F3.2 — Padronizar valores monetários com `Decimal`.**
   - Remover `float` de cálculos e contratos financeiros.
   - Definir arredondamento em centavos de forma centralizada.
 
@@ -214,7 +214,7 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
   - Registrar chave idempotente antes de aplicar efeitos financeiros.
   - Tratar repetição, atraso e entrega fora de ordem.
 
-- [ ] **F3.5 — Validar integralmente os pagamentos.**
+- [x] **F3.5 — Validar integralmente os pagamentos.**
   - Conferir valor, moeda, conta recebedora, identificador externo e associação ao pedido.
 
 - [ ] **F3.6 — Definir pagamentos após expiração.**
@@ -224,7 +224,7 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
 - [ ] **F3.7 — Testar webhook e reconciliação simultâneos.**
   - Garantir que somente uma confirmação produza efeitos.
 
-- [ ] **F3.8 — Revisar cancelamentos e reembolsos.**
+- [x] **F3.8 — Revisar cancelamentos e reembolsos.**
   - Garantir liberação correta de bilhetes.
   - Evitar reembolso duplicado e saldo negativo indevido.
 
@@ -235,7 +235,7 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
 - [ ] **F3.10 — Criar reprocessamento administrativo auditável.**
   - Registrar operador, motivo, estado anterior e resultado.
 
-- [ ] **F3.11 — Criar testes de invariantes do ledger.**
+- [x] **F3.11 — Criar testes de invariantes do ledger.**
   - Confirmar que o saldo pode ser reconstruído pelos lançamentos.
   - Proibir chaves idempotentes duplicadas e efeitos financeiros órfãos.
 
@@ -314,17 +314,17 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
 
 ### Tarefas
 
-- [ ] **F5.1 — Criar imagens de execução.**
+- [x] **F5.1 — Criar imagens de execução.**
   - Dockerfile do backend.
   - Dockerfile do frontend.
 
-- [ ] **F5.2 — Criar ambiente composto de desenvolvimento.**
+- [x] **F5.2 — Criar ambiente composto de desenvolvimento.**
   - API, frontend, PostgreSQL e infraestrutura adicional necessária.
 
-- [ ] **F5.3 — Remover tarefas periódicas do processo web.**
+- [x] **F5.3 — Remover tarefas periódicas do processo web.**
   - Retirar expiração de pedidos e reconciliação do `lifespan` da API.
 
-- [ ] **F5.4 — Criar worker e scheduler.**
+- [x] **F5.4 — Criar worker e scheduler.**
   - Garantir execução exclusiva ou idempotente entre réplicas.
   - Implementar retentativas e fila de falhas.
 
