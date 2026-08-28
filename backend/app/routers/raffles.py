@@ -25,6 +25,15 @@ from backend.app.models.draw import DrawAudit
 
 router = APIRouter(prefix="/raffles", tags=["Campanhas de Rifas"])
 
+ALLOWED_RAFFLE_TRANSITIONS = {
+    RaffleStatus.DRAFT.value: {RaffleStatus.ACTIVE.value, RaffleStatus.CANCELLED.value},
+    RaffleStatus.ACTIVE.value: {RaffleStatus.PAUSED.value, RaffleStatus.DRAWING.value, RaffleStatus.CANCELLED.value},
+    RaffleStatus.PAUSED.value: {RaffleStatus.ACTIVE.value, RaffleStatus.CANCELLED.value},
+    RaffleStatus.DRAWING.value: {RaffleStatus.DRAWN.value, RaffleStatus.CANCELLED.value},
+    RaffleStatus.DRAWN.value: set(),
+    RaffleStatus.CANCELLED.value: set(),
+}
+
 def generate_raffle_slug(title: str) -> str:
     slug = title.lower().strip()
     slug = re.sub(r'[^\w\s-]', '', slug)
@@ -37,6 +46,8 @@ def list_public_raffles(
     category: Optional[str] = None,
     search: Optional[str] = None,
     tenant_slug: Optional[str] = None,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
     query = db.query(Raffle).join(Tenant, Raffle.tenant_id == Tenant.id).filter(
@@ -53,7 +64,7 @@ def list_public_raffles(
     if tenant_slug:
         query = query.filter(Tenant.slug == tenant_slug)
         
-    raffles = query.order_by(Raffle.is_featured.desc(), Raffle.created_at.desc()).all()
+    raffles = query.order_by(Raffle.is_featured.desc(), Raffle.created_at.desc()).offset(offset).limit(limit).all()
     
     results = []
     for r in raffles:
@@ -84,12 +95,16 @@ def list_public_raffles(
     return results
 
 @router.get("/my-raffles", response_model=List[RafflePublicItem])
-def list_my_raffles(current_user: User = Depends(get_current_organizer), db: Session = Depends(get_db)):
+def list_my_raffles(
+    offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100),
+    current_user: User = Depends(get_current_organizer), db: Session = Depends(get_db)
+):
     tenant = current_user.tenant
     if not tenant:
         raise HTTPException(status_code=404, detail="Perfil de organizador não encontrado.")
         
-    raffles = db.query(Raffle).filter(Raffle.tenant_id == tenant.id).order_by(Raffle.created_at.desc()).all()
+    raffles = (db.query(Raffle).filter(Raffle.tenant_id == tenant.id)
+               .order_by(Raffle.created_at.desc()).offset(offset).limit(limit).all())
     results = []
     for r in raffles:
         sold = r.sold_count or 0
@@ -242,6 +257,8 @@ def update_raffle(
     if payload.images is not None:
         raffle.images = payload.images
     if payload.status is not None:
+        if payload.status != raffle.status and payload.status not in ALLOWED_RAFFLE_TRANSITIONS.get(raffle.status, set()):
+            raise HTTPException(status_code=409, detail="Transição de estado da rifa não permitida.")
         raffle.status = payload.status
     if payload.draw_date is not None:
         raffle.draw_date = payload.draw_date

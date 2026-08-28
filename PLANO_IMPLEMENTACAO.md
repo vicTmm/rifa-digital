@@ -259,7 +259,7 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
 
 ### Tarefas
 
-- [ ] **F4.1 — Formalizar estados de uma rifa.**
+- [x] **F4.1 — Formalizar estados de uma rifa.**
   - Definir transições permitidas entre rascunho, publicada, pausada, encerrada, sorteada e cancelada.
 
 - [ ] **F4.2 — Completar a gestão de rifas.**
@@ -268,7 +268,7 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
 - [ ] **F4.3 — Melhorar checkout e retomada de pagamento.**
   - Tratar refresh, fechamento do navegador, expiração e retorno posterior.
 
-- [ ] **F4.4 — Adicionar paginação e filtros.**
+- [x] **F4.4 — Adicionar paginação e filtros.**
   - Rifas, pedidos, eventos de pagamento, saques e tenants.
 
 - [ ] **F4.5 — Otimizar o grid de números.**
