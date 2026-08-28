@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: rifa
+      POSTGRES_USER: rifa
+      POSTGRES_PASSWORD: rifa_dev_password
+    volumes: [rifa-postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rifa -d rifa"]
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://rifa:rifa_dev_password@postgres:5432/rifa
+      ENVIRONMENT: development
+    depends_on:
+      postgres: {condition: service_healthy}
+    ports: ["8000:8000"]
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["python", "-m", "backend.app.worker"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://rifa:rifa_dev_password@postgres:5432/rifa
+      ENVIRONMENT: development
+    depends_on:
+      postgres: {condition: service_healthy}
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    depends_on: [api]
+    ports: ["3000:3000"]
+volumes:
+  rifa-postgres:

@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
-import asyncio
 import os
 from sqlalchemy import text
 from slowapi.errors import RateLimitExceeded
@@ -12,55 +11,13 @@ from slowapi.errors import RateLimitExceeded
 from backend.app.config import settings
 from backend.app.seed import seed_database
 from backend.app.database import SessionLocal
-from backend.app.services.raffle_service import RaffleService
-from backend.app.services.payment_reconciliation import PaymentReconciliationService
 from backend.app.routers import auth, tenants, raffles, orders, tickets, admin, uploads
 from backend.app.services.rate_limit import limiter
-
-def cleanup_expired_orders() -> None:
-    db = SessionLocal()
-    try:
-        RaffleService.cleanup_expired_orders(db)
-    except Exception:
-        db.rollback()
-    finally:
-        db.close()
-
-
-async def expiration_worker() -> None:
-    while True:
-        await asyncio.sleep(settings.EXPIRED_ORDER_CLEANUP_INTERVAL_SECONDS)
-        await asyncio.to_thread(cleanup_expired_orders)
-
-
-async def payment_reconciliation_worker() -> None:
-    while True:
-        await asyncio.sleep(settings.PAYMENT_RECONCILIATION_INTERVAL_SECONDS)
-        db = SessionLocal()
-        try:
-            await PaymentReconciliationService.reconcile_pending(db)
-        finally:
-            db.close()
-
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     seed_database()
-    cleanup_task = asyncio.create_task(expiration_worker())
-    reconciliation_task = asyncio.create_task(payment_reconciliation_worker())
-    try:
-        yield
-    finally:
-        cleanup_task.cancel()
-        reconciliation_task.cancel()
-        try:
-            await cleanup_task
-        except asyncio.CancelledError:
-            pass
-        try:
-            await reconciliation_task
-        except asyncio.CancelledError:
-            pass
+    yield
 
 
 app = FastAPI(
