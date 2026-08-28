@@ -453,6 +453,12 @@ Uma tarefa somente pode ser marcada como concluída quando:
 
 ## 13. Estimativa geral
 
+### Bloqueios externos registrados
+
+- O envio efetivo de e-mail depende da escolha e das credenciais de um provedor SMTP/transacional.
+- A homologação de Mercado Pago e transações reais exige credenciais de sandbox/produção e autorização do responsável financeiro.
+- A validação jurídica e os documentos públicos exigem revisão profissional conforme a jurisdição de operação.
+
 - **Homologação interna confiável:** aproximadamente 2 a 3 semanas.
 - **Produção enxuta:** aproximadamente 4 a 6 semanas.
 
