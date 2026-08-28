@@ -340,7 +340,7 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
 - [ ] **F5.8 — Adicionar métricas e alertas.**
   - Erros HTTP, latência, webhooks, fila, reconciliação, reservas e pagamentos pendentes.
 
-- [ ] **F5.9 — Separar liveness e readiness.**
+- [x] **F5.9 — Separar liveness e readiness.**
   - Readiness deve validar dependências necessárias ao tráfego.
 
 - [ ] **F5.10 — Configurar backup e restauração.**

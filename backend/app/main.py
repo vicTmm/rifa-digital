@@ -96,3 +96,20 @@ def health_check():
         return {"status": "healthy", "database": "connected"}
     finally:
         db.close()
+
+
+@app.get("/live", tags=["Operação"])
+def liveness_check():
+    return {"status": "alive"}
+
+
+@app.get("/ready", tags=["Operação"])
+def readiness_check():
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "ready", "database": "connected"}
+    except Exception:
+        return JSONResponse(status_code=503, content={"status": "not_ready"})
+    finally:
+        db.close()
