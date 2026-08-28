@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.orm import Session
 
@@ -8,15 +9,27 @@ from backend.app.models.tenant import Tenant
 from backend.app.services.credentials import CredentialService
 from backend.app.services.mercadopago_service import MercadoPagoService
 from backend.app.services.raffle_service import RaffleService
+from backend.app.services.financial import money
 
 
 class PaymentReconciliationService:
     @staticmethod
     def payment_matches_order(payment: dict, order: Order) -> bool:
-        return (
-            payment.get("status") == "approved"
-            and abs(float(payment.get("transaction_amount", 0)) - float(order.total_amount)) <= 0.001
-        )
+        if payment.get("status") != "approved":
+            return False
+        # Mercado Pago returns currency_id on real responses. If present, reject
+        # another currency; mocks may omit it for backwards compatibility.
+        currency = payment.get("currency_id") or payment.get("currency")
+        if currency and str(currency).upper() != "BRL":
+            return False
+        try:
+            received = Decimal(str(payment.get("transaction_amount")))
+            expected = Decimal(str(order.total_amount))
+            if not received.is_finite() or not expected.is_finite():
+                return False
+            return received == expected
+        except (InvalidOperation, ValueError, TypeError):
+            return False
 
     @classmethod
     async def reconcile_pending(cls, db: Session, limit: int = 100) -> dict[str, int]:

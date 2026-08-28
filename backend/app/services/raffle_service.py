@@ -1,4 +1,5 @@
 import random
+from decimal import Decimal
 from typing import List, Tuple, Optional, Dict, Any
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
@@ -29,20 +30,21 @@ class RaffleService:
         Calculates: (unit_price, discount_amount, total_amount)
         Applies highest applicable combo discount.
         """
-        unit_price = raffle.price_per_number
-        base_total = quantity * unit_price
+        unit_price = money(raffle.price_per_number)
+        base_total = Decimal(quantity) * unit_price
         
         # Check discount combos
-        best_discount_percent = 0.0
+        best_discount_percent = Decimal("0")
         if raffle.discount_combos:
             for combo in sorted(raffle.discount_combos, key=lambda x: x.get("quantity", 0), reverse=True):
                 if quantity >= combo.get("quantity", 0):
-                    best_discount_percent = combo.get("discount_percentage", 0.0)
+                    best_discount_percent = money(combo.get("discount_percentage", 0.0))
                     break
         
-        discount_amount = round(base_total * (best_discount_percent / 100.0), 2)
-        total_amount = round(base_total - discount_amount, 2)
-        return unit_price, discount_amount, total_amount
+        discount_amount = money(base_total * best_discount_percent / Decimal("100"))
+        total_amount = money(base_total - discount_amount)
+        # Public schemas currently expose floats; keep the calculation itself exact.
+        return float(unit_price), float(discount_amount), float(total_amount)
 
     @classmethod
     def cleanup_expired_orders(cls, db: Session, raffle_id: Optional[int] = None, commit: bool = True):
@@ -160,9 +162,11 @@ class RaffleService:
         
         # Calculate fees
         tenant = db.query(Tenant).filter(Tenant.id == raffle.tenant_id).first()
-        fee_percent = tenant.custom_fee_percent if (tenant and tenant.custom_fee_percent is not None) else settings.DEFAULT_PLATFORM_FEE_PERCENT
-        fee_amount = round(order.total_amount * (fee_percent / 100.0), 2)
-        net_amount = round(order.total_amount - fee_amount, 2)
+        fee_percent = (tenant.custom_fee_percent if (tenant and tenant.custom_fee_percent is not None)
+                       else settings.DEFAULT_PLATFORM_FEE_PERCENT)
+        fee_percent = money(fee_percent)
+        fee_amount = money(money(order.total_amount) * fee_percent / Decimal("100"))
+        net_amount = money(money(order.total_amount) - fee_amount)
         
         order.platform_fee_percent = fee_percent
         order.platform_fee_amount = fee_amount
