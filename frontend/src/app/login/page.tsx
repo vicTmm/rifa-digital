@@ -119,6 +119,11 @@ export default function LoginPage() {
               </>
             )}
           </button>
+          <div className="text-center">
+            <Link href="/recuperar-senha" className="text-xs text-emerald-400 hover:underline">
+              Esqueci minha senha
+            </Link>
+          </div>
         </form>
 
         {/* Demo Credentials Box */}

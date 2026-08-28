@@ -174,8 +174,9 @@ Cada tarefa deve ser entregue em commits pequenos e revisáveis. Testes e build 
   - [x] Restringir tokens de debug a ambientes não produtivos.
   - [ ] Integrar envio efetivo de e-mail e interface frontend.
 
-- [ ] **F2.11 — Criar testes automatizados de segurança.**
-  - Enumeração, autorização cruzada, tokens inválidos, rate limit, upload malicioso e configuração de produção.
+- [x] **F2.11 — Criar testes automatizados de segurança.**
+  - [x] Cobrir enumeração, autorização, tokens inválidos, rate limit, upload malicioso e configuração de produção.
+  - [x] Validar migração de segurança de contas em banco limpo.
 
 ### Critérios de aceite
 
